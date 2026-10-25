@@ -53,9 +53,24 @@
             overflow: hidden;
             border-radius: 1.5rem;
             position: relative;
-            background-color: #f3f4f6;
+            background-color: #e2e8f0;
+            /* Color de fondo por si no carga la imagen */
             border: 5px solid white;
             box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Texto de respaldo por si la imagen se rompe */
+        .map-fallback-text {
+            position: absolute;
+            color: #94a3b8;
+            font-weight: 800;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 0;
         }
 
         .map-stage-image {
@@ -69,6 +84,7 @@
             transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
             pointer-events: none;
+            z-index: 1;
         }
 
         @keyframes pulse-ring {
@@ -105,7 +121,8 @@
             'WhatsApp Image 2026-10-24 at 17.27.00.jpeg',
             'WhatsApp Image 2026-10-24 at 17.27.00_2.jpeg',
             'WhatsApp Image 2026-10-24 at 17.27.00_3.jpeg',
-            'mapa.png'
+            'mapa.png',
+            'https://placehold.co/950x600/e2e8f0/94a3b8?text=Tapete+de+Juego' // Fallback seguro final
         ];
 
         const CHARACTERS = [
@@ -152,7 +169,6 @@
             const [isUrlKey] = useState(!!keyFromUrl);
 
             // WIZARD Y FLUJO
-            // wizardStep = 0 (API Key), 1 (Jugadores), 2 (Personajes), 3 (Dificultad)
             const [wizardStep, setWizardStep] = useState(!initialKey ? 0 : 1);
             const [step, setStep] = useState('setup');
 
@@ -191,7 +207,7 @@
                 }
             };
 
-            // INICIALIZACIÓN RECONOCIMIENTO DE VOZ
+            // INICIALIZACIÓN RECONOCIMIENTO DE VOZ (MICROFONO)
             useEffect(() => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) return;
@@ -235,41 +251,86 @@
                 }
             }, [step, currentStoryIndex, difficulty]);
 
-            // MANEJO DE TEXT TO SPEECH (NARRADA)
+            // GOOGLE CLOUD TEXT TO SPEECH (NARRADA)
+            const playGoogleTTS = async (text, characterName) => {
+                try {
+                    let voiceName = "es-ES-Neural2-A"; // Mujer por defecto
+                    let pitch = 0;
+                    let speakingRate = 1.0;
+
+                    const charLower = (characterName || '').toLowerCase();
+
+                    // Magia: asignar voces y tonos según el personaje
+                    if (charLower.includes('minnie') || charLower.includes('daisy')) {
+                        voiceName = "es-ES-Neural2-A";
+                        pitch = 6.0; // Voz aguda
+                    } else if (charLower.includes('mickey')) {
+                        voiceName = "es-ES-Neural2-B"; // Hombre
+                        pitch = 4.0;
+                    } else if (charLower.includes('donald')) {
+                        voiceName = "es-ES-Neural2-B";
+                        pitch = -4.0; // Voz grave y peculiar
+                        speakingRate = 1.1;
+                    } else if (charLower.includes('perro') || charLower.includes('pluto') || charLower.includes('gato')) {
+                        voiceName = "es-ES-Neural2-C";
+                        pitch = 1.0;
+                    }
+
+                    const requestBody = {
+                        input: { text: text },
+                        voice: { languageCode: "es-ES", name: voiceName },
+                        audioConfig: { audioEncoding: "MP3", pitch: pitch, speakingRate: speakingRate }
+                    };
+
+                    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Google TTS Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
+
+                    if (window.currentAudio) window.currentAudio.pause();
+                    window.currentAudio = audio;
+                    audio.play();
+
+                } catch (error) {
+                    console.warn("Fallo Google TTS (Posiblemente falte habilitar la API en Cloud Console). Usando voz de respaldo...", error);
+                    // Fallback a voz del sistema
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'es-ES';
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            // LANZAR AUDIO CUANDO CAMBIA EL TURNO EN MODO "NARRADA"
             useEffect(() => {
                 if (step === 'story' && difficulty === 'narrada' && storyData) {
                     const currentLine = storyData.story[currentStoryIndex];
                     if (currentLine) {
-                        window.speechSynthesis.cancel(); // Detiene audios previos
+                        if (window.currentAudio) window.currentAudio.pause();
+                        window.speechSynthesis.cancel();
 
                         const textToRead = currentLine.type === 'action'
-                            ? `¡Acción para ${currentLine.character}! ${currentLine.text}`
+                            ? `¡Atención ${currentLine.player_name}! Es hora de mover a ${currentLine.character}. ${currentLine.text}`
                             : currentLine.text;
 
-                        const utterance = new SpeechSynthesisUtterance(textToRead);
-                        utterance.lang = 'es-ES';
-
-                        // Ajuste de voces (tono simulado según el personaje)
-                        const charName = (currentLine.character || '').toLowerCase();
-                        if (charName === 'minnie' || charName === 'daisy') {
-                            utterance.pitch = 1.6;
-                        } else if (charName === 'mickey') {
-                            utterance.pitch = 1.3;
-                        } else if (charName === 'donald') {
-                            utterance.pitch = 0.6;
-                            utterance.rate = 0.9;
-                        } else {
-                            utterance.pitch = 1.0;
-                        }
-
-                        window.speechSynthesis.speak(utterance);
+                        playGoogleTTS(textToRead, currentLine.character);
                     }
                 }
 
-                return () => { window.speechSynthesis.cancel(); }
+                return () => {
+                    if (window.currentAudio) window.currentAudio.pause();
+                    window.speechSynthesis.cancel();
+                }
             }, [step, currentStoryIndex, difficulty, storyData]);
 
-
+            // EVALUAR PROGRESO (VOZ)
             const evalProgress = (spoken) => {
                 if (!storyData || step !== 'story') return;
                 const currentLine = storyData.story[currentStoryIndex];
@@ -296,7 +357,9 @@
 
             const advanceStory = () => {
                 setTranscript('');
-                window.speechSynthesis.cancel(); // Si le dan "Avanzar", corta la voz
+                if (window.currentAudio) window.currentAudio.pause();
+                window.speechSynthesis.cancel();
+
                 if (currentStoryIndex < storyData.story.length - 1) {
                     setCurrentStoryIndex(prev => prev + 1);
                 } else {
@@ -311,12 +374,10 @@
                 setSelectedCharacters(prev => {
                     const alreadyAssignedToMe = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
 
-                    // Si ya es mío, lo desmarco
                     if (alreadyAssignedToMe) {
                         return prev.filter(sc => !(sc.char.id === char.id && sc.playerId === activePlayerId));
                     }
 
-                    // Lo elimino de otro si lo tenía, y lo asigno al jugador actual
                     const withoutThisChar = prev.filter(sc => sc.char.id !== char.id);
                     return [...withoutThisChar, { char, playerId: activePlayerId }];
                 });
@@ -486,13 +547,17 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                             <p className="text-slate-600 font-bold mb-4 text-center">
                                 En: <span className="text-indigo-600 font-extrabold">{zone.name}</span> <span className="text-xs font-normal text-slate-400">({zone.detail})</span>
                             </p>
+
+                            {/* MAPA CON FONDO DE RESPALDO */}
                             <div className="map-viewport mb-6">
-                                <img src={currentMapSrc} alt="Mapa" onError={handleImageError} className="map-stage-image"
+                                <div className="map-fallback-text">Mapa</div>
+                                <img src={currentMapSrc} alt="" onError={handleImageError} className="map-stage-image"
                                     style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }} />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white shadow-xl flex items-center justify-center">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white shadow-xl flex items-center justify-center z-10">
                                     <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
                                 </div>
                             </div>
+
                             <button
                                 onClick={() => {
                                     if (currentPositionIndex < storyData.initial_positions.length - 1) {
@@ -538,8 +603,11 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 <span className="bg-white/95 px-4 py-1.5 rounded-2xl text-xs sm:text-sm font-black text-slate-800 shadow-sm">
                                     Turno: {current.player_name}
                                 </span>
-                                <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-white relative">
-                                    <img src={currentMapSrc} alt="Lugar" onError={handleImageError}
+
+                                {/* MAPA PEQUEÑO CON FONDO DE RESPALDO */}
+                                <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-slate-200 relative flex items-center justify-center">
+                                    <span className="absolute text-[10px] font-black text-slate-400">MAPA</span>
+                                    <img src={currentMapSrc} alt="" onError={handleImageError} className="z-10"
                                         style={{ position: 'absolute', left: '50%', top: '50%', width: '320px', maxWidth: 'none', transformOrigin: '0 0', transform: `scale(${zone.scale * 0.7}) translate(-${zone.x}, -${zone.y})` }} />
                                 </div>
                             </div>
@@ -628,7 +696,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     {/* WIZARD CONTAINER */}
                     <main className="disney-card p-5 sm:p-8 border border-pink-100/70 flex-1">
 
-                        {/* WIZARD PROGRESS BAR (Visual Only) */}
+                        {/* WIZARD PROGRESS BAR */}
                         <div className="flex justify-between items-center mb-8 px-2 max-w-md mx-auto">
                             {[1, 2, 3].map(st => (
                                 <div key={st} className="flex items-center">
@@ -646,7 +714,11 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         {wizardStep === 0 && (
                             <div className="max-w-md mx-auto animate-fadeIn">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-2">Paso 0: Clave Mágica</h3>
-                                <p className="text-sm font-medium text-slate-500 text-center mb-6">Ingresa tu llave para que los personajes puedan hablar.</p>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave para que los personajes puedan hablar.</p>
+
+                                <div className="bg-amber-50 text-amber-800 text-[11px] p-3 rounded-xl mb-4 font-bold border border-amber-200">
+                                    🎙️ Nota: Para que el narrador de voz de Google funcione, la API "Cloud Text-to-Speech" debe estar habilitada en la consola de Google Cloud para esta llave.
+                                </div>
 
                                 <input
                                     type="password"
@@ -735,7 +807,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 {/* Grilla de Personajes */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
                                     {CHARACTERS.map(c => {
-                                        // Buscar a quién pertenece este personaje
                                         const assignedData = selectedCharacters.find(sc => sc.char.id === c.id);
                                         const ownerPlayer = assignedData ? players.find(p => p.id === assignedData.playerId) : null;
 
@@ -746,17 +817,14 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                                 className={`char-card p-3 cursor-pointer flex flex-col items-center justify-between text-center select-none ${!ownerPlayer ? 'unselected' : 'shadow-sm'}`}
                                                 style={{ borderColor: ownerPlayer ? ownerPlayer.color : undefined }}
                                             >
-                                                {/* Checkmark superior */}
                                                 {ownerPlayer && (
                                                     <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white" style={{ backgroundColor: ownerPlayer.color }}>
                                                         ✓
                                                     </div>
                                                 )}
-
                                                 <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center p-1 mb-2">
                                                     <img src={c.image} alt={c.name} className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 hover:scale-105" />
                                                 </div>
-
                                                 <div>
                                                     <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">{c.name}</h4>
                                                     {ownerPlayer && (

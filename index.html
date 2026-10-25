@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Armemos la Historia! - Aventura Multimedia</title>
+    <title>¡Armemos la Historia! - Aventura en el Mapa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -75,20 +75,36 @@
             z-index: 1;
         }
 
-        @keyframes gentle-bounce {
-
-            0%,
-            100% {
-                transform: translateY(0);
+        @keyframes kenburns {
+            0% {
+                transform: scale(1);
             }
 
             50% {
-                transform: translateY(-8px);
+                transform: scale(1.12) translate(-1%, -1%);
+            }
+
+            100% {
+                transform: scale(1);
             }
         }
 
-        .animate-bounce-gentle {
-            animation: gentle-bounce 3.5s infinite ease-in-out;
+        .video-player-container {
+            width: 100%;
+            height: 280px;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            position: relative;
+            background-color: #020617;
+            border: 4px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-scene-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: kenburns 14s infinite alternate ease-in-out;
         }
 
         @keyframes pulse-ring {
@@ -111,302 +127,34 @@
         .listening-indicator {
             animation: pulse-ring 2s infinite;
         }
-
-        @keyframes blink-cursor {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0;
-            }
-        }
-
-        .typing-cursor {
-            display: inline-block;
-            width: 3px;
-            height: 1.1em;
-            background-color: #EC4899;
-            margin-left: 2px;
-            vertical-align: text-bottom;
-            animation: blink-cursor 0.8s infinite;
-        }
-
-        .generated-media-container {
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            background: #000;
-            position: relative;
-        }
-
-        @keyframes kenburns {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.12) translate(-1%, -1%);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .video-fx {
-            animation: kenburns 12s infinite alternate ease-in-out;
-        }
     </style>
 </head>
 
 <body class="text-slate-800">
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+    <script type="text/babel" data-type="module">
+        import { CHARACTERS, PLAYER_COLORS } from './personajes.js';
+        import { MAP_IMAGE, MAP_ZONES } from './fondos.js';
+        import { dialogAudio } from './dialogAudio.js';
+        import { useSpeechRecognition, evaluateSpeechProgress } from './events.js';
+        import { generateStoryPrompt } from './story_prompts.js';
 
-        const MAP_IMAGE = './mapa.jpeg';
-
-        const CHARACTERS = [
-            {
-                id: 'minnie',
-                name: 'Minnie',
-                subtitle: '¡Vestido de lunares!',
-                emoji: '🎀',
-                voice_design: 'A very high-pitched, playful, energetic and slightly nasal female cartoon mouse voice, talking with cheerful enthusiasm and sweet affection. Speaking clearly with a warm Uruguayan Spanish accent.',
-                image: './personajes/minnie.png'
-            },
-            {
-                id: 'mickey',
-                name: 'Mickey',
-                subtitle: '¡Líder de la casa!',
-                emoji: '🐭',
-                voice_design: 'A cheerful, high-pitched male cartoon mouse voice, highly energetic, optimistic, and friendly. Speaking with a bouncy rhythm and a clear Uruguayan Spanish accent.',
-                image: './personajes/mickey.png'
-            },
-            {
-                id: 'donald',
-                name: 'Donald',
-                subtitle: '¡Gorra marinera!',
-                emoji: '🦆',
-                voice_design: 'A raspy, squawky, duck-like male cartoon voice, slightly temperamental but very energetic and playful. Speaking with a heavily textured, slightly garbled tone in a Uruguayan Spanish accent.',
-                image: './personajes/donald.png'
-            },
-            {
-                id: 'daisy',
-                name: 'Daisy',
-                subtitle: '¡Lazo morado coqueto!',
-                emoji: '🌼',
-                voice_design: 'A confident, slightly high-pitched female cartoon duck voice, sweet but with a touch of attitude and elegance. Speaking clearly and cheerfully with a Uruguayan Spanish accent.',
-                image: './personajes/daisy.png'
-            },
-            {
-                id: 'pluto',
-                name: 'Pluto',
-                subtitle: '¡El fiel perrito!',
-                emoji: '🐕',
-                voice_design: 'A goofy, breathy, highly energetic male voice, very loyal and playful, slightly breathless like a happy dog. Expressive, warm, and playful, speaking with a Uruguayan Spanish accent.',
-                image: './personajes/pluto.png'
-            },
-            {
-                id: 'gato',
-                name: 'Gato (Figaro)',
-                subtitle: '¡Travieso y mimoso!',
-                emoji: '🐱',
-                voice_design: 'A cute, mischievous, soft and high-pitched kitten-like voice, playful and sweet with occasional purring undertones. Speaking with a Uruguayan Spanish accent.',
-                image: './personajes/gato.png'
-            },
-            {
-                id: 'auto',
-                name: 'Auto Rojo',
-                subtitle: '¡Rumbo al paseo!',
-                emoji: '🚗',
-                voice_design: 'A mechanical but friendly and enthusiastic male voice, sounding like a magical cartoon car, energetic, with a slight metallic echo and engine-like purr. Speaking in a Uruguayan Spanish accent.',
-                image: './personajes/auto_rojo.png'
-            },
-            {
-                id: 'dale',
-                name: 'Ardillas',
-                subtitle: '¡Grandes bellotas!',
-                emoji: '🐿️',
-                voice_design: 'A very fast, extremely high-pitched, squeaky and hyperactive chipmunk voice, mischievous and playful, speaking rapidly with giggles in a Uruguayan Spanish accent.',
-                image: './personajes/ardilla.png'
-            },
-            {
-                id: 'clarabella',
-                name: 'Clarabella',
-                subtitle: '¡La vaca amistosa!',
-                emoji: '🐮',
-                voice_design: 'A friendly, slow, slightly clumsy and resonant female cow cartoon voice. Speaking warmly and musically in a Uruguayan Spanish accent.',
-                image: './personajes/clarabella.png'
-            },
-            {
-                id: 'parro',
-                name: 'Parro',
-                subtitle: '¡El lorito hablador!',
-                emoji: '🦜',
-                voice_design: 'A squawky, high-pitched cartoon bird voice, repeating words happily and energetically in a Uruguayan Spanish accent.',
-                image: './personajes/parro.png'
-            }
-        ];
-
-        const PLAYER_COLORS = ['#38BDF8', '#34D399', '#F472B6', '#FBBF24', '#A78BFA'];
-
-        // Mapa de zonas con rutas directas y opciones alternativas si el nombre tiene tildes o espacios
-        const MAP_ZONES = {
-            'granja': { name: 'La Granja', x: '14.6%', y: '22.3%', scale: 2.6, background: './fondos/Granja soleada con granero rojo.png' },
-            'playa': { name: 'La Playa', x: '86.9%', y: '12.6%', scale: 2.6, background: './fondos/Playa dorada entre pinos.png' },
-            'escenario': { name: 'El Escenario', x: '89.8%', y: '86.3%', scale: 2.6, background: './fondos/Escenario azul con plaza lavanda.png' },
-            'plaza': { name: 'La Plaza', x: '8.3%', y: '84.8%', scale: 2.6, background: './fondos/Plaza ajardinada de lunares pastel.png' },
-            'minnie_living': { name: 'Living de Minnie', x: '40.0%', y: '58.0%', scale: 3.1, background: './fondos/Salón curvo con rincón de lectura.png' },
-            'minnie_cocina': { name: 'Cocina de Minnie', x: '52.7%', y: '34.2%', scale: 3.1, background: './fondos/Salón curvo con rincón de lectura.png' },
-            'casa_perros': { name: 'Casa de Perros', x: '52.2%', y: '78.9%', scale: 3.0, background: './fondos/Casitas rojas y azules en el jardín.png' },
-            'parque_juegos': {
-                name: 'Parque de Juegos',
-                x: '73.7%', y: '52.8%', scale: 2.8,
-                // Si el nombre exacto de tu archivo es distinto, el manejador onError cargará el mapa automáticamente
-                background: './fondos/Parque infantil colorido sobre arena de juegos.png'
-            },
-            'casa_amarilla': { name: 'Casa Amarilla', x: '28.3%', y: '65.5%', scale: 3.0, background: './fondos/La casa amarilla de cúpula.png' },
-            'bosque': { name: 'El Bosque', x: '84.0%', y: '34.2%', scale: 2.7, background: './fondos/Plaza ajardinada de lunares pastel.png' }
-        };
-
-        const ZONES_PROMPT_LIST = Object.entries(MAP_ZONES).map(([id, z]) => `- "${id}": ${z.name}`).join('\n');
-
-
-        /* ==============================================================
-         * FUNCIONES MODULARES SOLICITADAS
-         * ============================================================== */
-
-        /**
-         * 1. Se encarga del audio del diálogo recibiendo texto y personaje.
-         *    Modula la voz uruguaya (es-UY) y emite el progreso de reproducción.
-         */
-        async function reproducirAudioDialogo(texto, personaje, { apiKey, onProgreso, onFin } = {}) {
-            try {
-                let pitch = 0;
-                let speakingRate = 1.0;
-                const charLower = (personaje || 'Minnie').toLowerCase();
-
-                if (charLower.includes('minnie') || charLower.includes('daisy') || charLower.includes('clarabella')) {
-                    pitch = 6.0;
-                } else if (charLower.includes('mickey')) {
-                    pitch = 4.0;
-                } else if (charLower.includes('donald')) {
-                    pitch = -4.0;
-                    speakingRate = 1.1;
-                } else if (charLower.includes('perro') || charLower.includes('pluto') || charLower.includes('gato')) {
-                    pitch = 1.0;
-                } else if (charLower.includes('parro')) {
-                    pitch = 8.0;
-                    speakingRate = 1.2;
-                }
-
-                if (window.currentAudio) window.currentAudio.pause();
-                window.speechSynthesis.cancel();
-
-                const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        input: { text: texto },
-                        voice: { languageCode: "es-UY" },
-                        audioConfig: { audioEncoding: "MP3", pitch, speakingRate }
-                    })
-                });
-
-                if (!response.ok) throw new Error("TTS status: " + response.status);
-
-                const data = await response.json();
-                const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
-                window.currentAudio = audio;
-
-                audio.ontimeupdate = () => {
-                    if (audio.duration && !isNaN(audio.duration) && onProgreso) {
-                        const ratio = Math.min(1, audio.currentTime / audio.duration);
-                        const charsCount = Math.ceil(texto.length * ratio);
-                        onProgreso(texto.slice(0, charsCount));
-                    }
-                };
-
-                audio.onended = () => {
-                    if (onProgreso) onProgreso(texto);
-                    if (onFin) onFin();
-                };
-
-                await audio.play();
-            } catch (error) {
-                // Respaldo de síntesis local si la API de Google TTS falla
-                const utterance = new SpeechSynthesisUtterance(texto);
-                utterance.lang = 'es-UY';
-                utterance.onboundary = (e) => {
-                    if (e.charIndex !== undefined && onProgreso) {
-                        onProgreso(texto.slice(0, e.charIndex + (e.charLength || 1)));
-                    }
-                };
-                utterance.onend = () => {
-                    if (onProgreso) onProgreso(texto);
-                    if (onFin) onFin();
-                };
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        /**
-         * 2. Recibe un fondo, la lista de personajes y el evento, y genera la imagen o video.
-         *    Construye un prompt hiperdetallado y devuelve la URL del recurso generado.
-         */
-        function generarMediaEvento({ fondo, personajes = [], evento = '', tipo = 'imagen' }) {
-            const nombreFondo = fondo?.name || fondo || 'Magic Disney playground';
-            const nombresPersonajes = Array.isArray(personajes) ? personajes.join(' and ') : personajes;
-
-            // Construcción del prompt en inglés optimizado para renderizado 3D
-            const promptDescription = `Disney Pixar 3D style, set in ${nombreFondo}, featuring ${nombresPersonajes || 'cute friends'}, where ${evento}, highly detailed, cinematic warm lighting, colorful cartoon atmosphere, 8k resolution`;
-
-            const encodedPrompt = encodeURIComponent(promptDescription);
-            const mediaUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
-
-            return {
-                url: mediaUrl,
-                tipo: tipo === 'video' || tipo === 'video_event' ? 'video' : 'imagen',
-                prompt: promptDescription,
-                descripcion: evento
-            };
-        }
-
-
-        /* ==============================================================
-         * APLICACIÓN PRINCIPAL (REACT)
-         * ============================================================== */
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         function App() {
             const urlParams = new URLSearchParams(window.location.search);
             const keyFromUrl = urlParams.get('key') || urlParams.get('apikey');
 
-            if (keyFromUrl) localStorage.setItem('gemini_story_key', keyFromUrl.trim());
-
-            const initialKey = keyFromUrl ? keyFromUrl.trim() : (localStorage.getItem('gemini_story_key') || '');
-            const [apiKey, setApiKey] = useState(initialKey);
+            const [apiKey, setApiKey] = useState(() => keyFromUrl?.trim() || localStorage.getItem('gemini_story_key') || '');
             const [isUrlKey] = useState(!!keyFromUrl);
 
-            const [wizardStep, setWizardStep] = useState(!initialKey ? 0 : 1);
+            const [wizardStep, setWizardStep] = useState(!apiKey ? 0 : 1);
             const [step, setStep] = useState('setup');
             const [videoSceneUrl, setVideoSceneUrl] = useState('');
 
-            const savedPlayers = JSON.parse(localStorage.getItem('gemini_story_players') || '[]');
-            const [players, setPlayers] = useState(savedPlayers);
-
-            const savedSelectedCharacters = JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]');
-            const [selectedCharacters, setSelectedCharacters] = useState(savedSelectedCharacters);
-
-            useEffect(() => {
-                localStorage.setItem('gemini_story_selected_chars', JSON.stringify(selectedCharacters));
-            }, [selectedCharacters]);
-
+            const [players, setPlayers] = useState(() => JSON.parse(localStorage.getItem('gemini_story_players') || '[]'));
+            const [selectedCharacters, setSelectedCharacters] = useState(() => JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]'));
             const [activePlayerId, setActivePlayerId] = useState(null);
             const [difficulty, setDifficulty] = useState('facil');
 
@@ -415,261 +163,135 @@
             const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
             const [errorMessage, setErrorMessage] = useState('');
 
-            // Estado de texto progresivo y objeto de evento actual
-            const [displayedText, setDisplayedText] = useState('');
-            const [currentMediaEvent, setCurrentMediaEvent] = useState(null);
-
-            const [isListening, setIsListening] = useState(false);
-            const [transcript, setTranscript] = useState('');
-            const recognitionRef = useRef(null);
-
-            const handleSaveKey = (val) => {
-                setApiKey(val);
-                localStorage.setItem('gemini_story_key', val.trim());
-            };
-
-            // RECONOCIMIENTO DE VOZ URUGUAYO
+            // Sincronizaciones con localStorage
             useEffect(() => {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) return;
-
-                const recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.lang = 'es-UY';
-
-                recognition.onresult = (event) => {
-                    let spoken = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) spoken += event.results[i][0].transcript;
-                    if (spoken.trim()) {
-                        setTranscript(spoken.trim());
-                        evalProgress(spoken.toLowerCase().trim());
-                    }
-                };
-
-                recognition.onerror = () => setIsListening(false);
-                recognition.onend = () => {
-                    if (isListening && step === 'story' && difficulty !== 'narrada') {
-                        try { recognition.start(); } catch (e) { }
-                    }
-                };
-
-                recognitionRef.current = recognition;
-            }, [step, isListening, storyData, currentStoryIndex, difficulty]);
+                if (apiKey) localStorage.setItem('gemini_story_key', apiKey.trim());
+            }, [apiKey]);
 
             useEffect(() => {
-                if (step === 'story' && difficulty !== 'narrada' && recognitionRef.current) {
-                    try { recognitionRef.current.start(); setIsListening(true); } catch (e) { }
-                } else if (recognitionRef.current && isListening) {
-                    recognitionRef.current.stop(); setIsListening(false);
+                localStorage.setItem('gemini_story_players', JSON.stringify(players));
+            }, [players]);
+
+            useEffect(() => {
+                localStorage.setItem('gemini_story_selected_chars', JSON.stringify(selectedCharacters));
+            }, [selectedCharacters]);
+
+            // Limpiar asignaciones huérfanas si se elimina un jugador
+            useEffect(() => {
+                const playerIds = new Set(players.map(p => p.id));
+                setSelectedCharacters(prev => prev.filter(sc => playerIds.has(sc.playerId)));
+            }, [players]);
+
+            // Regla: cada jugador debe tener al menos un personaje
+            const allPlayersHaveCharacter = useMemo(() => {
+                return players.length > 0 && players.every(p => selectedCharacters.some(sc => sc.playerId === p.id));
+            }, [players, selectedCharacters]);
+
+            // Control de lectura por voz
+            const handleVoiceInput = useCallback((spoken) => {
+                if (!storyData || step !== 'story' || difficulty === 'narrada') return;
+                const currentLine = storyData.story[currentStoryIndex];
+                if (evaluateSpeechProgress(spoken, currentLine, difficulty)) {
+                    advanceStory();
                 }
-            }, [step, currentStoryIndex, difficulty]);
+            }, [storyData, step, difficulty, currentStoryIndex]);
 
-            // EJECUCIÓN AL CAMBIAR DE SLIDE (USA LAS NUEVAS FUNCIONES)
+            const { isListening, transcript, resetTranscript } = useSpeechRecognition({
+                enabled: step === 'story' && difficulty !== 'narrada',
+                onResult: handleVoiceInput
+            });
+
+            // Narración automática en modo narrado
             useEffect(() => {
-                if (step === 'story' && storyData) {
+                if (step === 'story' && difficulty === 'narrada' && storyData) {
                     const currentLine = storyData.story[currentStoryIndex];
-                    if (!currentLine) return;
-
-                    const currentZone = MAP_ZONES[currentLine.locationId] || { name: 'Aventura', background: MAP_IMAGE };
-
-                    // Si es un evento (imagen o video), invocamos generarMediaEvento
-                    if (currentLine.type === 'image_event' || currentLine.type === 'video_event') {
-                        const media = generarMediaEvento({
-                            fondo: currentZone,
-                            personajes: currentLine.characters_involved || [currentLine.character || 'Minnie'],
-                            evento: currentLine.event_description || currentLine.text,
-                            tipo: currentLine.type === 'video_event' ? 'video' : 'imagen'
-                        });
-                        setCurrentMediaEvent(media);
-                    } else {
-                        setCurrentMediaEvent(null);
-                    }
-
-                    // Audio de diálogo o narración del evento
-                    if (difficulty === 'narrada') {
-                        setDisplayedText('');
+                    if (currentLine) {
                         const textToRead = currentLine.type === 'action'
                             ? `¡Atención ${currentLine.player_name}! Mueve a ${currentLine.character}. ${currentLine.text}`
                             : currentLine.text;
-
-                        reproducirAudioDialogo(textToRead, currentLine.character || 'Minnie', {
-                            apiKey,
-                            onProgreso: (txt) => setDisplayedText(txt),
-                            onFin: () => setDisplayedText(currentLine.text)
-                        });
-                    } else {
-                        setDisplayedText(currentLine.text);
+                        dialogAudio.speak(textToRead, currentLine.character, apiKey);
                     }
                 }
-
-                return () => {
-                    if (window.currentAudio) window.currentAudio.pause();
-                    window.speechSynthesis.cancel();
-                };
-            }, [step, currentStoryIndex, difficulty, storyData]);
-
-            const evalProgress = (spoken) => {
-                if (!storyData || step !== 'story') return;
-                const currentLine = storyData.story[currentStoryIndex];
-
-                if (currentLine.type !== 'dialogue') {
-                    if (spoken.length > 2) advanceStory();
-                } else {
-                    const targets = currentLine.target_words || [];
-                    const matches = targets.filter(w => spoken.includes(w.toLowerCase())).length;
-
-                    if (difficulty === 'facil' && spoken.length > 1) advanceStory();
-                    else if (difficulty === 'medio' && (matches >= Math.max(1, Math.floor(targets.length * 0.4)) || targets.length === 0)) advanceStory();
-                    else if (difficulty === 'dificil' && (matches >= Math.max(1, Math.ceil(targets.length * 0.75)) || targets.length === 0)) advanceStory();
-                }
-            };
+                return () => dialogAudio.stop();
+            }, [step, currentStoryIndex, difficulty, storyData, apiKey]);
 
             const advanceStory = () => {
-                setTranscript('');
-                if (window.currentAudio) window.currentAudio.pause();
-                window.speechSynthesis.cancel();
+                resetTranscript();
+                dialogAudio.stop();
 
                 if (currentStoryIndex < storyData.story.length - 1) {
                     setCurrentStoryIndex(prev => prev + 1);
                 } else {
                     setStep('generating_video');
-                    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent("Disney Pixar style 3D cartoon, magical storybook finish, celebration")}?nologo=true`;
+                    const promptQuery = encodeURIComponent('Disney Pixar style 3D cartoon, Mickey Mouse Clubhouse celebration, happy children playing, magical glowing lights, storybook finish --width 800 --height 500');
+                    const sceneUrl = `https://image.pollinations.ai/prompt/${promptQuery}?nologo=true`;
+
                     const img = new Image();
-                    img.src = imgUrl;
+                    img.src = sceneUrl;
                     img.onload = () => {
-                        setVideoSceneUrl(imgUrl);
+                        setVideoSceneUrl(sceneUrl);
                         setStep('video_playing');
-                        reproducirAudioDialogo(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, "Minnie", { apiKey });
+                        dialogAudio.speak(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, 'Minnie', apiKey);
                     };
-                    img.onerror = () => setStep('finished');
+                    img.onerror = () => {
+                        setStep('finished');
+                    };
                 }
             };
 
             const assignCharacter = (char) => {
                 if (!activePlayerId) return;
                 setSelectedCharacters(prev => {
-                    const exists = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
-                    if (exists) return prev.filter(sc => !(sc.char.id === char.id && sc.playerId === activePlayerId));
-                    return [...prev.filter(sc => sc.char.id !== char.id), { char, playerId: activePlayerId }];
+                    const alreadyAssigned = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
+                    if (alreadyAssigned) {
+                        return prev.filter(sc => !(sc.char.id === char.id && sc.playerId === activePlayerId));
+                    }
+                    const withoutChar = prev.filter(sc => sc.char.id !== char.id);
+                    return [...withoutChar, { char, playerId: activePlayerId }];
                 });
             };
 
             const addPlayer = (isStar) => {
+                const color = PLAYER_COLORS[players.length % PLAYER_COLORS.length];
                 setPlayers(prev => [...prev, {
                     id: Date.now(),
                     name: isStar ? `Niño ${prev.length + 1}` : `Amigo ${prev.length + 1}`,
                     isStar,
-                    color: PLAYER_COLORS[prev.length % PLAYER_COLORS.length]
+                    color
                 }]);
             };
 
             const removePlayer = (id) => {
                 setPlayers(players.filter(p => p.id !== id));
-                setSelectedCharacters(prev => prev.filter(sc => sc.playerId !== id));
             };
 
             const updatePlayerName = (id, newName) => {
                 setPlayers(players.map(p => p.id === id ? { ...p, name: newName } : p));
             };
 
-            const handlePlayersNext = () => {
-                localStorage.setItem('gemini_story_players', JSON.stringify(players));
-                if (players.length > 0 && !activePlayerId) setActivePlayerId(players[0].id);
-                setWizardStep(2);
-            };
-
-            const generateStory = async () => {
-                const cleanKey = apiKey.trim();
+            const handleStartStory = async () => {
                 setStep('loading');
-
-                const playersPrompt = players.map(p => {
-                    const chars = selectedCharacters.filter(sc => sc.playerId === p.id).map(sc => sc.char.name);
-                    return `- ${p.name} (Color: ${p.color}, Estrella: ${p.isStar ? 'SI' : 'NO'}) controla a: ${chars.length > 0 ? chars.join(', ') : 'Ninguno'}`;
-                }).join('\n');
-
-                const prompt = `
-Crea un cuento interactivo corto para niños de 4 a 6 años enfocado en valores como la amabilidad, compartir y el trabajo en equipo.
-El final debe ser abierto para que el niño continúe con su imaginación.
-
-Jugadores y personajes:
-${playersPrompt}
-
-UBICACIONES OBLIGATORIAS (Usa SOLO estos IDs):
-${ZONES_PROMPT_LIST}
-
-ESTRUCTURA DE SLIDES:
-Combina turnos de lectura de personajes ("dialogue") con eventos mágicos visuales ("image_event" y "video_event"):
-1. "dialogue": Diálogo interactivo del personaje asignado a un jugador.
-   - Requiere: "type": "dialogue", "character", "player_name", "player_color", "text", "locationId", "target_words".
-2. "image_event": Momento sorpresa ilustrado en el escenario.
-   - Requiere: "type": "image_event", "locationId", "event_description" (resumen del suceso), "text" (narración en español).
-3. "video_event": Escena animada con varios personajes.
-   - Requiere: "type": "video_event", "locationId", "characters_involved" (lista de personajes), "event_description", "text" (narración en español).
-
-Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
-{
-  "title": "Aventura en el Club",
-  "moral": "Compartir con amigos hace todo más alegre",
-  "initial_positions": [
-    { "character": "${selectedCharacters[0]?.char.name || 'Minnie'}", "locationId": "granja", "description": "en la granja" }
-  ],
-  "story": [
-    {
-      "type": "dialogue",
-      "character": "${selectedCharacters[0]?.char.name || 'Minnie'}",
-      "player_name": "${players[0]?.name || 'Jugador 1'}",
-      "player_color": "${players[0]?.color || '#38BDF8'}",
-      "text": "¡Hola a todos! Qué lindo día para explorar el mapa juntos.",
-      "locationId": "granja",
-      "target_words": ["hola", "lindo", "explorar"]
-    },
-    {
-      "type": "image_event",
-      "locationId": "parque_juegos",
-      "event_description": "a glowing magical treasure box hidden inside the colorful sandbox",
-      "text": "¡Miren! Algo brilla entre los juegos del parque."
-    },
-    {
-      "type": "video_event",
-      "locationId": "plaza",
-      "characters_involved": ["${selectedCharacters[0]?.char.name || 'Minnie'}"],
-      "event_description": "dancing happily around musical notes floating in the air",
-      "text": "¡Todos celebran con un baile mágico bajo las estrellas!"
-    }
-  ]
-}`;
-
+                setErrorMessage('');
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${cleanKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { responseMimeType: "application/json", temperature: 0.7 }
-                        })
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const data = await response.json();
-                    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-                    setStoryData(JSON.parse(rawText));
+                    const data = await generateStoryPrompt({ players, selectedCharacters, apiKey });
+                    setStoryData(data);
                     setCurrentPositionIndex(0);
                     setCurrentStoryIndex(0);
                     setStep('positioning');
-                } catch (error) {
-                    setErrorMessage("Por favor verifica tu Clave API de Gemini o conexión a Internet.");
+                } catch (err) {
+                    console.error(err);
+                    setErrorMessage(err.message || 'Error al conectar con Gemini.');
                     setStep('error');
                 }
             };
 
+            /* VISTAS */
             if (step === 'loading') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="text-7xl mb-4 animate-bounce">✨</div>
                         <h2 className="text-3xl font-extrabold text-slate-800">Creando la aventura mágica...</h2>
-                        <p className="text-pink-500 font-bold mt-2">Diseñando los diálogos y eventos...</p>
+                        <p className="text-pink-500 font-bold mt-2">Repartiendo los turnos entre los jugadores estrella.</p>
                     </div>
                 );
             }
@@ -680,8 +302,12 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         <div className="disney-card p-8 max-w-md w-full text-center">
                             <div className="text-6xl mb-4">⚠️</div>
                             <h2 className="text-2xl font-black text-rose-500 mb-2">No se pudo generar</h2>
-                            <p className="text-xs bg-rose-50 text-rose-700 p-4 rounded-xl mb-6 font-mono font-bold break-all">{errorMessage}</p>
-                            <button onClick={() => setStep('setup')} className="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg transition">Volver a Intentar</button>
+                            <p className="text-xs bg-rose-50 text-rose-700 p-4 rounded-xl mb-6 text-left font-mono font-bold break-all">
+                                {errorMessage}
+                            </p>
+                            <button onClick={() => setStep('setup')} className="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg transition">
+                                Volver a Intentar
+                            </button>
                         </div>
                     </div>
                 );
@@ -690,313 +316,415 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
             if (step === 'generating_video') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-                        <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-6"></div>
-                        <h2 className="text-3xl font-extrabold text-slate-800">Creando la escena final mágica...</h2>
+                        <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-6 mx-auto"></div>
+                        <h2 className="text-3xl font-extrabold text-slate-800">Creando el video final mágico...</h2>
+                        <p className="text-pink-500 font-bold mt-2">¡Pintando la moraleja de la historia!</p>
                     </div>
                 );
             }
 
-            if (step === 'video_playing' || step === 'finished') {
+            if (step === 'video_playing') {
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                        <div className="disney-card p-6 sm:p-8 w-full max-w-xl text-center bg-slate-900 text-white shadow-2xl border border-pink-100">
-                            <h1 className="text-3xl font-black mb-5">🎬 ¡Fin de la Aventura!</h1>
-                            {step === 'video_playing' && (
-                                <div className="generated-media-container h-64 mb-6">
-                                    <img src={videoSceneUrl} className="w-full h-full object-cover video-fx" alt="Fin" />
+                    <div className="min-h-screen flex flex-col p-4 sm:p-6 max-w-xl mx-auto justify-center">
+                        <div className="disney-card p-6 sm:p-8 w-full flex flex-col items-center border border-pink-100 shadow-xl bg-slate-900 text-white">
+                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-5 text-center tracking-wide">
+                                🎬 ¡Fin de la Aventura!
+                            </h1>
+                            <div className="video-player-container">
+                                <img src={videoSceneUrl} alt="Escena del Video Final" className="video-scene-image" />
+                                <div className="absolute top-3 left-3 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow">
+                                    En Vivo
                                 </div>
-                            )}
-                            <div className="bg-white/10 p-5 rounded-2xl border border-white/20">
-                                <p className="text-xs text-pink-300 uppercase tracking-widest font-black mb-2">Enseñanza Mágica</p>
-                                <p className="text-lg font-bold italic">"{storyData?.moral}"</p>
                             </div>
-                            <button onClick={() => { setStep('setup'); setWizardStep(1); }} className="mt-6 w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition">Jugar de Nuevo 🔄</button>
+                            <div className="bg-white/10 rounded-2xl p-5 mt-6 w-full text-center border border-white/20">
+                                <p className="text-xs font-black text-pink-300 uppercase tracking-widest mb-2">Enseñanza Mágica</p>
+                                <p className="text-lg text-white font-bold italic">"{storyData?.moral}"</p>
+                            </div>
+                            <button onClick={() => { setStep('setup'); setWizardStep(1); }} className="w-full mt-6 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold py-4 rounded-2xl text-lg shadow-md transition active:scale-95">
+                                Jugar de Nuevo 🔄
+                            </button>
                         </div>
                     </div>
                 );
             }
 
-            // PASO 1: COLOCACIÓN DE PIEZAS
             if (step === 'positioning' && storyData) {
                 const pos = storyData.initial_positions[currentPositionIndex];
-                const charLower = (pos.character || '').toLowerCase();
-                const charObj = CHARACTERS.find(c => c.name.toLowerCase() === charLower || c.id.toLowerCase() === charLower) || CHARACTERS[0];
-                const zone = MAP_ZONES[pos.locationId] || { x: '50%', y: '50%', scale: 2.0, name: pos.description };
+                const charObj = CHARACTERS.find(c => c.name.toLowerCase() === pos.character.toLowerCase()) || { name: pos.character, image: '', emoji: '🧸' };
+                const zone = MAP_ZONES[pos.locationId] || { x: '50%', y: '50%', scale: 2.0, name: pos.description, detail: '' };
 
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-6 max-w-xl mx-auto">
+                    <div className="min-h-screen flex flex-col items-center p-6 max-w-xl mx-auto justify-center">
+                        <div className="bg-white px-6 py-2 rounded-full font-extrabold text-pink-600 text-xs uppercase tracking-wider mb-4 shadow-sm border border-pink-100">
+                            Preparando el mapa ({currentPositionIndex + 1} de {storyData.initial_positions.length})
+                        </div>
                         <div className="disney-card p-6 w-full flex flex-col items-center border border-pink-100">
-                            <div className="flex items-center space-x-3 mb-4">
-                                <img src={charObj.image} className="w-14 h-14 object-contain bg-pink-50 rounded-2xl p-1" alt={charObj.name} />
-                                <h2 className="text-2xl font-black text-slate-800">Coloca a <span className="text-pink-600">{pos.character}</span></h2>
+                            <div className="flex items-center space-x-3 mb-2">
+                                <div className="w-14 h-14 bg-pink-50 rounded-2xl border-2 border-pink-200 p-1 flex items-center justify-center overflow-hidden shadow-sm">
+                                    <img src={charObj.image} alt={charObj.name} className="w-full h-full object-contain" />
+                                </div>
+                                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
+                                    Coloca a <span className="text-pink-600">{pos.character}</span>
+                                </h2>
                             </div>
-                            <p className="font-bold text-slate-600 mb-4">En: <span className="text-indigo-600 font-extrabold">{zone.name}</span></p>
+                            <p className="text-slate-600 font-bold mb-4 text-center">
+                                En: <span className="text-indigo-600 font-extrabold">{zone.name}</span> <span className="text-xs font-normal text-slate-400">({zone.detail})</span>
+                            </p>
 
                             <div className="map-viewport mb-6">
-                                <img src={MAP_IMAGE} className="map-stage-image" style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }} alt="Mapa" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white flex items-center justify-center z-10">
+                                <img
+                                    src={MAP_IMAGE}
+                                    alt="Mapa de Juego"
+                                    className="map-stage-image"
+                                    style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }}
+                                />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white shadow-xl flex items-center justify-center z-10">
                                     <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
                                 </div>
                             </div>
 
-                            <button onClick={() => { if (currentPositionIndex < storyData.initial_positions.length - 1) setCurrentPositionIndex(prev => prev + 1); else setStep('story'); }} className="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold py-4 rounded-2xl transition active:scale-95">¡Listo, ya lo coloqué! 👍</button>
+                            <button
+                                onClick={() => {
+                                    if (currentPositionIndex < storyData.initial_positions.length - 1) {
+                                        setCurrentPositionIndex(prev => prev + 1);
+                                    } else {
+                                        setStep('story');
+                                    }
+                                }}
+                                className="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold py-4 rounded-2xl text-lg shadow-md transition active:scale-95"
+                            >
+                                ¡Listo, ya lo coloqué! 👍
+                            </button>
                         </div>
                     </div>
                 );
             }
 
-            // PANTALLA PRINCIPAL DE HISTORIA (DIÁLOGOS Y EVENTOS CON FONDO GARANTIZADO)
             if (step === 'story' && storyData) {
                 const current = storyData.story[currentStoryIndex];
-                const currentZone = MAP_ZONES[current.locationId] || { name: 'Aventura', background: MAP_IMAGE };
-                const isMediaEvent = current.type === 'image_event' || current.type === 'video_event';
-                const isStillSpeaking = difficulty === 'narrada' && displayedText.length < current.text.length;
-
-                let charObj = CHARACTERS[0];
-                if (!isMediaEvent) {
-                    const charLower = (current.character || '').toLowerCase();
-                    charObj = CHARACTERS.find(c => c.name.toLowerCase() === charLower || charLower.includes(c.id)) || CHARACTERS[0];
-                }
+                const isAction = current.type === 'action';
+                const cardColor = isAction ? '#FEF08A' : (current.player_color || '#FFFFFF');
+                const zone = MAP_ZONES[current.locationId] || { x: '50%', y: '50%', scale: 2.0 };
+                const charObj = CHARACTERS.find(c => c.name.toLowerCase() === (current.character || '').toLowerCase());
 
                 return (
-                    <div className="min-h-screen flex flex-col p-2 sm:p-5 max-w-4xl mx-auto justify-center">
-                        <div className="w-full relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white flex flex-col min-h-[600px] sm:min-h-[660px] bg-slate-900">
+                    <div className="min-h-screen flex flex-col p-4 sm:p-6 max-w-xl mx-auto justify-between">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="bg-white px-5 py-2 rounded-full font-black text-xs text-slate-700 shadow-sm border border-slate-100 truncate flex-1 mr-2">
+                                {storyData.title}
+                            </span>
+                            <div className="flex items-center space-x-3 shrink-0">
+                                {difficulty !== 'narrada' && (
+                                    <span className={`w-3.5 h-3.5 rounded-full ${isListening ? 'bg-rose-500 animate-ping' : 'bg-slate-300'}`}></span>
+                                )}
+                                <button onClick={advanceStory} className="text-slate-500 hover:text-slate-800 text-xs font-black bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
+                                    Avanzar ⏭
+                                </button>
+                            </div>
+                        </div>
 
-                            {/* FONDO REAL CON MANEJADOR ONERROR (NUNCA QUEDA EN NEGRO) */}
-                            <img
-                                src={currentZone.background}
-                                alt={currentZone.name}
-                                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none"
-                                onError={(e) => {
-                                    console.warn(`No se pudo cargar "${e.target.src}". Cargando mapa de respaldo...`);
-                                    if (!e.target.src.includes('mapa.jpeg')) {
-                                        e.target.src = MAP_IMAGE;
-                                    }
-                                }}
-                            />
+                        <div className="flex-1 disney-card p-6 sm:p-8 flex flex-col justify-between overflow-hidden relative border border-white/60 shadow-lg" style={{ backgroundColor: cardColor }}>
+                            <div className="flex justify-between items-start z-10">
+                                <span className="bg-white/95 px-4 py-1.5 rounded-2xl text-xs sm:text-sm font-black text-slate-800 shadow-sm">
+                                    Turno: {current.player_name}
+                                </span>
 
-                            {/* Sombra cinematográfica suave */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none z-0"></div>
-
-                            {/* Encabezado superior */}
-                            <div className="relative z-20 p-3 sm:p-5 flex justify-between items-center gap-2">
-                                <div className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full font-black text-xs text-slate-800 shadow-md flex items-center gap-2 border border-white">
-                                    <span>📍</span>
-                                    <span>{currentZone.name}</span>
-                                    <span className="text-slate-300">|</span>
-                                    <span className="text-pink-600 truncate max-w-[120px] sm:max-w-none">{storyData.title}</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    {difficulty !== 'narrada' && (
-                                        <span className={`w-3.5 h-3.5 rounded-full border-2 border-white ${isListening ? 'bg-rose-500 animate-ping' : 'bg-slate-300'}`}></span>
-                                    )}
-                                    <button onClick={advanceStory} className="text-slate-800 hover:text-pink-600 text-xs font-black bg-white/95 px-4 py-2 rounded-full shadow-lg border border-white transition active:scale-95">
-                                        Avanzar ⏭
-                                    </button>
+                                <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-white relative flex items-center justify-center">
+                                    <img
+                                        src={MAP_IMAGE}
+                                        alt="Zona"
+                                        className="z-10"
+                                        style={{
+                                            position: 'absolute',
+                                            left: '50%',
+                                            top: '50%',
+                                            width: '320px',
+                                            maxWidth: 'none',
+                                            transformOrigin: '0 0',
+                                            transform: `scale(${zone.scale * 0.7}) translate(-${zone.x}, -${zone.y})`
+                                        }}
+                                    />
                                 </div>
                             </div>
 
-                            {/* EVENTO (IMAGEN O VIDEO) */}
-                            {isMediaEvent && currentMediaEvent ? (
-                                <div className="relative z-20 flex-1 flex flex-col items-center justify-center p-4">
-                                    <div className="mb-4 bg-indigo-600 text-white font-black text-xs px-4 py-1.5 rounded-full shadow-lg border border-white/40 flex items-center gap-2 tracking-widest uppercase">
-                                        {currentMediaEvent.tipo === 'video' ? (
-                                            <><span className="text-red-400 animate-pulse text-base">●</span> CINTA DE VIDEO</>
-                                        ) : (
-                                            <>📸 FOTOGRAFÍA MÁGICA</>
-                                        )}
+                            <div className="my-auto text-center py-4 z-10 flex flex-col items-center">
+                                {isAction ? (
+                                    <div className="text-6xl mb-3">⚡</div>
+                                ) : (
+                                    <div className="flex items-center space-x-2 bg-white/80 px-4 py-1.5 rounded-full shadow-sm mb-3">
+                                        {charObj && <img src={charObj.image} alt={charObj.name} className="w-7 h-7 object-contain" />}
+                                        <span className="text-base font-extrabold text-slate-800">{current.character}</span>
                                     </div>
+                                )}
+                                <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
+                                    "{current.text}"
+                                </p>
+                            </div>
 
-                                    <div className="generated-media-container w-full max-w-xl aspect-video mb-5 flex items-center justify-center">
-                                        <img
-                                            src={currentMediaEvent.url}
-                                            className={`w-full h-full object-cover ${currentMediaEvent.tipo === 'video' ? 'video-fx' : ''}`}
-                                            alt="Evento"
-                                            key={currentMediaEvent.url}
-                                        />
-                                    </div>
-
-                                    <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border-2 border-indigo-200 max-w-lg w-full text-center">
-                                        <p className="text-lg sm:text-xl font-black text-slate-800 leading-snug">
-                                            "{displayedText}{isStillSpeaking && <span className="typing-cursor bg-indigo-500"></span>}"
-                                        </p>
-                                    </div>
+                            <div className="flex flex-col items-center z-10">
+                                <div className={`w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md text-2xl mb-2 ${isListening ? 'listening-indicator' : ''}`}>
+                                    {difficulty === 'narrada' ? '🗣️' : '🎙️'}
                                 </div>
-                            ) : (
-                                /* DIÁLOGO TRADICIONAL */
-                                <div className="relative z-20 flex-1 flex flex-col justify-between pt-2">
-                                    <div className="w-full max-w-md sm:max-w-lg mx-auto px-4">
-                                        <div className="relative rounded-3xl p-4 sm:p-5 shadow-xl border-4 backdrop-blur-md bg-white/95 border-pink-300">
-                                            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-pink-100">
-                                                <span className="text-[11px] sm:text-xs font-black text-white px-3 py-1 rounded-full shadow-sm" style={{ backgroundColor: current.player_color || '#EC4899' }}>
-                                                    ⭐ Turno: {current.player_name}
-                                                </span>
-                                                <span className="text-[11px] sm:text-xs font-black text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-200">
-                                                    {charObj.name}
-                                                </span>
-                                            </div>
-                                            <p className="text-lg sm:text-xl font-black text-slate-800 leading-snug">
-                                                "{displayedText}{isStillSpeaking && <span className="typing-cursor"></span>}"
-                                            </p>
-                                            <div className="absolute -bottom-4 left-12 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[16px] border-t-pink-300"></div>
-                                            <div className="absolute -bottom-3 left-[50px] w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[14px] border-t-white"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-end justify-between px-6 sm:px-12 pb-4">
-                                        <div className="relative group">
-                                            <img src={charObj.image} className="h-60 sm:h-72 object-contain filter drop-shadow-[0_15px_20px_rgba(0,0,0,0.6)] animate-bounce-gentle select-none" alt={charObj.name} />
-                                            <span className="block text-center mt-1 text-xs font-extrabold text-white bg-slate-900/60 px-3 py-0.5 rounded-full border border-white/20">
-                                                {charObj.name}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex flex-col items-center w-36 text-center mb-2">
-                                            <div className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-xl mb-1.5 border border-white">
-                                                {difficulty === 'narrada' ? '🗣️' : <span className="listening-indicator">🎙️</span>}
-                                            </div>
-                                            <p className="text-[10px] sm:text-xs font-black text-slate-800 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-white">
-                                                {difficulty === 'narrada' ? "Escuchando..." : "Lee para avanzar"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                                <p className="text-xs sm:text-sm font-extrabold text-slate-700 bg-white/90 px-5 py-1.5 rounded-full shadow-sm">
+                                    {difficulty === 'narrada'
+                                        ? "Escuchando el cuento narrado..."
+                                        : (isAction ? "¡Haz el sonido y mueve el muñeco!" : "Lee en voz alta para avanzar")}
+                                </p>
+                                {transcript && difficulty !== 'narrada' && (
+                                    <p className="text-xs font-bold text-slate-600 mt-2 bg-white/80 px-4 py-1.5 rounded-xl max-w-full truncate shadow-sm">
+                                        Escuchado: "{transcript}"
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
             }
 
-            /* CONFIGURACIÓN WIZARD */
+            /* WIZARD DE CONFIGURACIÓN */
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col">
                     <header className="text-center mb-6 pt-2">
                         <div className="inline-flex items-center gap-1.5 bg-pink-100/80 px-4 py-1.5 rounded-full text-xs font-black text-pink-700 tracking-wider mb-2">
-                            <span>✨</span><span>AVENTURA EN EL MAPA</span><span>✨</span>
+                            <span>✨</span>
+                            <span>AVENTURA EN EL MAPA</span>
+                            <span>✨</span>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900">¡Armemos la Historia!</h1>
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                            ¡Armemos la Historia!
+                        </h1>
                         {!isUrlKey && wizardStep > 0 && (
-                            <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline mt-2 hover:text-slate-600 block mx-auto">
+                            <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline mt-2 hover:text-slate-600">
                                 Modificar Clave Mágica
                             </button>
                         )}
                     </header>
 
-                    <main className="disney-card p-5 sm:p-8 flex-1">
+                    <main className="disney-card p-5 sm:p-8 border border-pink-100/70 flex-1">
                         <div className="flex justify-between items-center mb-8 px-2 max-w-md mx-auto">
                             {[1, 2, 3].map(st => (
                                 <div key={st} className="flex items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm border-2 ${wizardStep >= st ? 'bg-pink-500 text-white border-pink-500 shadow-md' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
                                         {st}
                                     </div>
-                                    {st < 3 && <div className={`w-12 sm:w-20 h-1 mx-2 rounded-full ${wizardStep > st ? 'bg-pink-300' : 'bg-slate-100'}`}></div>}
+                                    {st < 3 && (
+                                        <div className={`w-12 sm:w-20 h-1 mx-2 rounded-full ${wizardStep > st ? 'bg-pink-300' : 'bg-slate-100'}`}></div>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
+                        {/* PASO 0: CLAVE MÁGICA */}
                         {wizardStep === 0 && (
-                            <div className="max-w-md mx-auto text-center">
-                                <h3 className="text-xl font-black mb-2">Paso 0: Clave Mágica</h3>
-                                <p className="text-sm font-medium text-slate-500 mb-4">Ingresa tu llave de Gemini para jugar.</p>
-                                <input type="password" placeholder="Pega tu clave AIzaSy..." className="border-2 border-amber-300 rounded-xl px-4 py-3 w-full mb-6 font-mono text-sm focus:outline-none focus:ring-4 focus:ring-amber-200" value={apiKey} onChange={e => handleSaveKey(e.target.value)} />
-                                <button onClick={() => setWizardStep(1)} disabled={!apiKey.trim()} className="w-full py-4 rounded-xl font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 transition shadow-md">Guardar y Continuar</button>
+                            <div className="max-w-md mx-auto">
+                                <h3 className="text-xl font-black text-slate-800 text-center mb-2">Paso 0: Clave Mágica</h3>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave de Gemini para jugar.</p>
+
+                                <input
+                                    type="password"
+                                    placeholder="Pega tu clave AIzaSy..."
+                                    className="bg-white border-2 border-amber-300 rounded-xl px-4 py-3 text-sm font-mono w-full focus:outline-none focus:ring-4 focus:ring-amber-200 mb-6 shadow-sm"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => setWizardStep(1)}
+                                    disabled={!apiKey.trim()}
+                                    className={`w-full py-4 rounded-xl font-extrabold text-white shadow-md transition ${apiKey.trim() ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-300 cursor-not-allowed'}`}
+                                >
+                                    Guardar y Continuar
+                                </button>
                             </div>
                         )}
 
+                        {/* PASO 1: JUGADORES */}
                         {wizardStep === 1 && (
-                            <div className="max-w-xl mx-auto text-center">
-                                <h3 className="text-xl font-black mb-1">Paso 1: Jugadores</h3>
-                                <p className="text-sm font-medium text-slate-500 mb-6">¿Quiénes van a jugar hoy?</p>
+                            <div className="max-w-xl mx-auto">
+                                <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 1: Jugadores</h3>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-6">¿Quiénes van a jugar hoy?</p>
+
                                 <div className="space-y-3 mb-6">
-                                    {players.map(p => (
-                                        <div key={p.id} className="flex items-center bg-white rounded-2xl px-5 py-3 border-2 border-slate-100 shadow-sm">
+                                    {players.map((p) => (
+                                        <div key={p.id} className="flex items-center bg-white rounded-2xl px-5 py-3 border-2 border-slate-100 shadow-sm transition hover:border-slate-200">
                                             <span className="mr-3 text-xl">{p.isStar ? '⭐' : '👤'}</span>
-                                            <input type="text" value={p.name} onChange={e => updatePlayerName(p.id, e.target.value)} className="bg-transparent font-bold text-slate-800 text-base flex-1 focus:outline-none" />
-                                            <div className="w-6 h-6 rounded-full mr-4 border-2 border-white shadow-inner" style={{ backgroundColor: p.color }}></div>
+                                            <input
+                                                type="text"
+                                                value={p.name}
+                                                onChange={(e) => updatePlayerName(p.id, e.target.value)}
+                                                className="bg-transparent font-bold text-slate-800 text-base flex-1 focus:outline-none"
+                                                placeholder="Nombre del jugador..."
+                                            />
+                                            <div className="w-6 h-6 rounded-full shadow-inner mr-4 border-2 border-white" style={{ backgroundColor: p.color }}></div>
                                             <button onClick={() => removePlayer(p.id)} className="text-slate-300 hover:text-rose-500 font-black text-lg px-2">✕</button>
                                         </div>
                                     ))}
-                                    {players.length === 0 && <div className="bg-slate-50 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-6 font-bold text-sm">No hay jugadores. ¡Agrega uno!</div>}
+                                    {players.length === 0 && (
+                                        <div className="bg-slate-50 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center font-bold text-sm">
+                                            No hay jugadores. ¡Agrega uno para empezar!
+                                        </div>
+                                    )}
                                 </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                                    <button onClick={() => addPlayer(true)} className="border-2 border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold py-3.5 rounded-xl">⭐ Agregar Niño Estrella</button>
-                                    <button onClick={() => addPlayer(false)} className="border-2 border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-800 font-extrabold py-3.5 rounded-xl">👤 Agregar Amigo</button>
+                                    <button onClick={() => addPlayer(true)} className="border-2 border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-extrabold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                                        <span>⭐</span> Agregar Niño Estrella
+                                    </button>
+                                    <button onClick={() => addPlayer(false)} className="border-2 border-dashed border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-800 text-sm font-extrabold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                                        <span>👤</span> Agregar Amigo
+                                    </button>
                                 </div>
-                                <button onClick={handlePlayersNext} disabled={players.length === 0} className="w-full py-4 bg-pink-500 hover:bg-pink-600 text-white font-extrabold text-lg rounded-xl disabled:bg-slate-300 shadow-md transition">Siguiente: Personajes</button>
+
+                                <button
+                                    onClick={() => {
+                                        if (players.length > 0 && !activePlayerId) setActivePlayerId(players[0].id);
+                                        setWizardStep(2);
+                                    }}
+                                    disabled={players.length === 0}
+                                    className={`w-full py-4 rounded-xl font-extrabold text-white text-lg shadow-md transition ${players.length > 0 ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-300 cursor-not-allowed'}`}
+                                >
+                                    Siguiente: Elegir Personajes
+                                </button>
                             </div>
                         )}
 
+                        {/* PASO 2: ASIGNACIÓN DE PERSONAJES */}
                         {wizardStep === 2 && (
-                            <div className="text-center">
-                                <h3 className="text-xl font-black mb-1">Paso 2: Asignar Personajes</h3>
-                                <p className="text-sm font-medium text-slate-500 mb-6">Toca el jugador y luego elige su personaje.</p>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 2: Asignar Personajes</h3>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-6">Toca el nombre del jugador y luego elige su personaje.</p>
+
                                 <div className="flex flex-wrap gap-2 justify-center mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                                    {players.map(p => (
-                                        <button key={p.id} onClick={() => setActivePlayerId(p.id)} className={`px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${activePlayerId === p.id ? 'text-white shadow-md scale-105' : 'bg-white text-slate-600 border border-slate-200'}`} style={{ backgroundColor: activePlayerId === p.id ? p.color : undefined }}>
-                                            <span>{p.isStar ? '⭐' : '👤'}</span> {p.name}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
-                                    {CHARACTERS.map(c => {
-                                        const owner = players.find(p => p.id === selectedCharacters.find(sc => sc.char.id === c.id)?.playerId);
+                                    {players.map(p => {
+                                        const count = selectedCharacters.filter(sc => sc.playerId === p.id).length;
                                         return (
-                                            <div key={c.id} onClick={() => assignCharacter(c)} className={`char-card p-3 cursor-pointer flex flex-col items-center justify-between text-center select-none ${!owner ? 'unselected' : 'shadow-sm'}`} style={{ borderColor: owner?.color }}>
-                                                {owner && <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white" style={{ backgroundColor: owner.color }}>✓</div>}
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setActivePlayerId(p.id)}
+                                                className={`px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${activePlayerId === p.id ? 'text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                                                style={{ backgroundColor: activePlayerId === p.id ? p.color : undefined }}
+                                            >
+                                                <span>{p.isStar ? '⭐' : '👤'}</span> {p.name}
+                                                <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${activePlayerId === p.id ? 'bg-white/30 text-white' : (count > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600')}`}>
+                                                    {count > 0 ? `(${count})` : '(0)'}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+                                    {CHARACTERS.map(c => {
+                                        const assignedData = selectedCharacters.find(sc => sc.char.id === c.id);
+                                        const ownerPlayer = assignedData ? players.find(p => p.id === assignedData.playerId) : null;
+
+                                        return (
+                                            <div
+                                                key={c.id}
+                                                onClick={() => assignCharacter(c)}
+                                                className={`char-card p-3 cursor-pointer flex flex-col items-center justify-between text-center select-none ${!ownerPlayer ? 'unselected' : 'shadow-sm'}`}
+                                                style={{ borderColor: ownerPlayer ? ownerPlayer.color : undefined }}
+                                            >
+                                                {ownerPlayer && (
+                                                    <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white" style={{ backgroundColor: ownerPlayer.color }}>
+                                                        ✓
+                                                    </div>
+                                                )}
                                                 <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center p-1 mb-2">
-                                                    <img src={c.image} alt={c.name} className="w-full h-full object-contain filter drop-shadow-sm transition-transform hover:scale-105" />
+                                                    <img src={c.image} alt={c.name} className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 hover:scale-105" />
                                                 </div>
                                                 <div>
                                                     <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 leading-tight">{c.name}</h4>
-                                                    {owner && <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black text-white mt-1 truncate max-w-[80px]" style={{ backgroundColor: owner.color }}>{owner.name}</span>}
+                                                    {ownerPlayer && (
+                                                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black text-white mt-1 shadow-sm truncate max-w-[80px]" style={{ backgroundColor: ownerPlayer.color }}>
+                                                            {ownerPlayer.name}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
+
                                 <div className="flex gap-3">
-                                    <button onClick={() => setWizardStep(1)} className="px-6 py-4 bg-slate-100 font-extrabold text-slate-500 rounded-xl hover:bg-slate-200">Atrás</button>
-                                    <button onClick={() => setWizardStep(3)} disabled={selectedCharacters.length === 0} className="flex-1 py-4 bg-pink-500 hover:bg-pink-600 text-white font-extrabold text-lg rounded-xl shadow-md disabled:bg-slate-300">Siguiente: Dificultad</button>
+                                    <button onClick={() => setWizardStep(1)} className="px-6 py-4 rounded-xl font-extrabold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">
+                                        Atrás
+                                    </button>
+                                    <button
+                                        onClick={() => setWizardStep(3)}
+                                        disabled={!allPlayersHaveCharacter}
+                                        className={`flex-1 py-4 rounded-xl font-extrabold text-white text-lg shadow-md transition ${allPlayersHaveCharacter ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-300 cursor-not-allowed'}`}
+                                    >
+                                        Siguiente: Dificultad
+                                    </button>
                                 </div>
+
+                                {!allPlayersHaveCharacter && players.length > 0 && (
+                                    <p className="text-center text-xs font-bold text-rose-500 mt-3 animate-pulse">
+                                        * Cada jugador debe tener al menos un personaje asignado para continuar.
+                                    </p>
+                                )}
                             </div>
                         )}
 
+                        {/* PASO 3: DIFICULTAD (50% Narrada, 50% dividida entre los otros 3) */}
                         {wizardStep === 3 && (
-                            <div className="max-w-3xl mx-auto text-center">
-                                <h3 className="text-xl font-black mb-1">Paso 3: Nivel de Lectura</h3>
-                                <p className="text-sm font-medium text-slate-500 mb-6">Selecciona el modo de juego.</p>
+                            <div className="max-w-3xl mx-auto">
+                                <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 3: Nivel de Lectura</h3>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-6">Selecciona el modo de juego y ¡a la aventura!</p>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-8">
                                     {[
                                         { id: 'facil', icon: '🎂', title: '1) Fácil', desc: 'Sonidos y risas', tag: '3 a 4 años' },
                                         { id: 'medio', icon: '🧸', title: '2) Medio', desc: 'Palabras clave', tag: '5 años' },
                                         { id: 'dificil', icon: '🚀', title: '3) Difícil', desc: 'Leer frases largas', tag: '6+ años' },
-                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'El dispositivo lee', tag: 'Sin leer' }
+                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'El dispositivo lee el cuento en voz alta', tag: 'Sin lectura' }
                                     ].map(lvl => {
                                         const isSelected = difficulty === lvl.id;
                                         const colSpan = lvl.id === 'narrada' ? 'sm:col-span-3' : 'sm:col-span-1';
+
                                         return (
-                                            <div key={lvl.id} onClick={() => setDifficulty(lvl.id)} className={`p-4 rounded-2xl border-2 cursor-pointer transition select-none flex flex-col justify-between ${colSpan} ${isSelected ? 'border-pink-500 bg-pink-50 shadow-sm' : 'border-slate-100 bg-slate-50'}`}>
+                                            <div
+                                                key={lvl.id}
+                                                onClick={() => setDifficulty(lvl.id)}
+                                                className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition select-none flex flex-col justify-between ${colSpan} ${isSelected ? 'border-pink-500 bg-pink-50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}`}
+                                            >
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-lg">{lvl.icon}</span>
-                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-pink-500' : 'border-slate-300'}`}>{isSelected && <div className="w-2 h-2 rounded-full bg-pink-500"></div>}</div>
+                                                    <span className="text-xl">{lvl.icon}</span>
+                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-pink-500' : 'border-slate-300'}`}>
+                                                        {isSelected && <div className="w-2 h-2 rounded-full bg-pink-500"></div>}
+                                                    </div>
                                                 </div>
-                                                <h4 className={`text-sm font-black mb-1 ${isSelected ? 'text-pink-700' : 'text-slate-800'}`}>{lvl.title}</h4>
-                                                <p className="text-[11px] font-semibold text-slate-500 mb-2">{lvl.desc}</p>
-                                                <span className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md w-max ${isSelected ? 'bg-pink-100 text-pink-700' : 'bg-slate-200/70 text-slate-600'}`}>{lvl.tag}</span>
+                                                <div>
+                                                    <h4 className={`text-sm font-black mb-1 ${isSelected ? 'text-pink-700' : 'text-slate-800'}`}>{lvl.title}</h4>
+                                                    <p className="text-[11px] font-semibold text-slate-500 mb-2 leading-tight flex-1">{lvl.desc}</p>
+                                                </div>
+                                                <span className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md w-max ${isSelected ? 'bg-pink-100 text-pink-700' : 'bg-slate-200/70 text-slate-600'}`}>
+                                                    {lvl.tag}
+                                                </span>
                                             </div>
                                         );
                                     })}
                                 </div>
+
                                 <div className="flex gap-3">
-                                    <button onClick={() => setWizardStep(2)} className="px-6 py-4 bg-slate-100 font-extrabold text-slate-500 rounded-xl hover:bg-slate-200">Atrás</button>
-                                    <button onClick={generateStory} className="flex-1 py-4 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold text-lg rounded-xl shadow-lg active:scale-95 transition">✨ ¡Empezar Aventura!</button>
+                                    <button onClick={() => setWizardStep(2)} className="px-6 py-4 rounded-xl font-extrabold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">
+                                        Atrás
+                                    </button>
+                                    <button
+                                        onClick={handleStartStory}
+                                        className="flex-1 py-4 rounded-xl text-lg font-extrabold shadow-lg transition-all active:scale-95 bg-gradient-to-r from-rose-500 via-pink-500 to-rose-500 hover:from-rose-600 hover:to-pink-600 text-white flex items-center justify-center gap-2"
+                                    >
+                                        <span>✨</span> ¡Empezar Aventura!
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </main>
 
                     <footer className="text-center py-4 mt-2">
-                        <p className="text-[11px] font-bold text-slate-400">🌸 Inspirado en la magia de Minnie Mouse & Disney Junior</p>
+                        <p className="text-[11px] font-bold text-slate-400">
+                            🌸 Inspirado en la magia de Minnie Mouse & Disney Junior
+                        </p>
                     </footer>
                 </div>
             );

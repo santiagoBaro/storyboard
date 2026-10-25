@@ -76,3 +76,63 @@ export function evaluateSpeechProgress(spoken, currentLine, difficulty) {
 
     return false;
 }
+
+/**
+ * Genera una ilustración del evento usando Gemini Nano Banana 2.1
+ */
+export async function generateEventImage(promptText, apiKey) {
+    const cleanKey = apiKey?.trim();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-nano-banana-2.1:generateContent?key=${cleanKey}`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                responseModalities: ['IMAGE']
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Error en gemini-nano-banana-2.1: ${err}`);
+    }
+
+    const data = await response.json();
+    const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (!imagePart) throw new Error('No se generó la imagen.');
+
+    return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+}
+
+/**
+ * Genera un clip de video del evento usando Gemini Omni 1.1 Flash
+ */
+export async function generateEventVideo(promptText, apiKey) {
+    const cleanKey = apiKey?.trim();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-omni-1.1-flash:generateContent?key=${cleanKey}`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                responseModalities: ['VIDEO']
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Error en gemini-omni-1.1-flash: ${err}`);
+    }
+
+    const data = await response.json();
+    const videoPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (!videoPart) throw new Error('No se generó el video.');
+
+    return `data:${videoPart.inlineData.mimeType};base64,${videoPart.inlineData.data}`;
+}

@@ -1,3 +1,5 @@
+import { CHARACTERS } from './personajes.js';
+
 class DialogAudioManager {
     constructor() {
         this.currentAudio = null;
@@ -13,62 +15,65 @@ class DialogAudioManager {
         }
     }
 
-    getVoicePitchAndRate(characterName) {
-        const name = (characterName || '').toLowerCase();
-        if (name.includes('minnie') || name.includes('daisy') || name.includes('ardilla')) {
-            return { pitch: 6.0, rate: 1.1 };
-        }
-        if (name.includes('mickey')) {
-            return { pitch: 4.0, rate: 1.0 };
-        }
-        if (name.includes('donald')) {
-            return { pitch: -4.0, rate: 1.15 };
-        }
-        if (name.includes('clarabella')) {
-            return { pitch: -2.0, rate: 0.95 };
-        }
-        if (name.includes('parro') || name.includes('loro')) {
-            return { pitch: 5.0, rate: 1.2 };
-        }
-        if (name.includes('pluto') || name.includes('perro') || name.includes('gato')) {
-            return { pitch: 1.0, rate: 1.0 };
-        }
-        return { pitch: 0, rate: 1.0 };
-    }
-
     async speak(text, characterName, apiKey) {
         this.stop();
 
-        const { pitch, rate } = this.getVoicePitchAndRate(characterName);
+        const charObj = CHARACTERS.find(c => c.name.toLowerCase() === (characterName || '').toLowerCase());
+        const voiceStyle = charObj?.voice_design || 'Cheerful, enthusiastic cartoon character voice in clear Spanish';
+        const cleanKey = apiKey?.trim();
 
-        if (apiKey && apiKey.trim()) {
+        if (cleanKey) {
             try {
-                const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey.trim()}`, {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-lite-tts:generateContent?key=${cleanKey}`;
+
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        input: { text },
-                        voice: { languageCode: 'es-ES' },
-                        audioConfig: { audioEncoding: 'MP3', pitch, speakingRate: rate }
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: text,
+                                        speech_metadata: {
+                                            speaker: characterName || 'Narrador',
+                                            style: voiceStyle
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            responseModalities: ['AUDIO']
+                        }
                     })
                 });
 
-                if (!response.ok) throw new Error(`Google TTS Error: ${response.status}`);
+                if (!response.ok) {
+                    const errDetail = await response.text();
+                    throw new Error(`HTTP ${response.status} en gemini-3.8-flash-lite-tts: ${errDetail}`);
+                }
 
                 const data = await response.json();
-                const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-                this.currentAudio = audio;
-                return audio.play();
+                const candidatePart = data.candidates?.[0]?.content?.parts?.[0];
+                const audioBase64 = candidatePart?.inlineData?.data;
+
+                if (audioBase64) {
+                    // Gemini 3.8 TTS devuelve WAV (audio/wav) con cabecera estándar RIFF
+                    const mime = candidatePart?.inlineData?.mimeType || 'audio/wav';
+                    const audio = new Audio(`data:${mime};base64,${audioBase64}`);
+                    this.currentAudio = audio;
+                    return audio.play();
+                }
             } catch (err) {
-                console.warn('Fallback a SpeechSynthesis nativo:', err);
+                console.warn('Fallo gemini-3.8-flash-lite-tts, recurriendo a Web Speech API...', err);
             }
         }
 
+        // Fallback nativo del navegador si no hay conexión o falla la cuota
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'es-ES';
-            utterance.pitch = pitch > 0 ? 1.3 : (pitch < 0 ? 0.75 : 1.0);
-            utterance.rate = rate;
             window.speechSynthesis.speak(utterance);
         }
     }

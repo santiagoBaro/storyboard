@@ -137,7 +137,7 @@
         import { CHARACTERS, PLAYER_COLORS } from './personajes.js';
         import { MAP_IMAGE, MAP_ZONES } from './fondos.js';
         import { dialogAudio } from './dialogAudio.js';
-        import { useSpeechRecognition, evaluateSpeechProgress } from './events.js';
+        import { useSpeechRecognition, evaluateSpeechProgress, generateEventImage, generateEventVideo } from './events.js';
         import { generateStoryPrompt } from './story_prompts.js';
 
         const { useState, useEffect, useMemo, useCallback } = React;
@@ -151,7 +151,8 @@
 
             const [wizardStep, setWizardStep] = useState(!apiKey ? 0 : 1);
             const [step, setStep] = useState('setup');
-            const [videoSceneUrl, setVideoSceneUrl] = useState('');
+            const [mediaUrl, setMediaUrl] = useState('');
+            const [isVideo, setIsVideo] = useState(false);
 
             const [players, setPlayers] = useState(() => JSON.parse(localStorage.getItem('gemini_story_players') || '[]'));
             const [selectedCharacters, setSelectedCharacters] = useState(() => JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]'));
@@ -163,7 +164,6 @@
             const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
             const [errorMessage, setErrorMessage] = useState('');
 
-            // Sincronizaciones con localStorage
             useEffect(() => {
                 if (apiKey) localStorage.setItem('gemini_story_key', apiKey.trim());
             }, [apiKey]);
@@ -176,18 +176,15 @@
                 localStorage.setItem('gemini_story_selected_chars', JSON.stringify(selectedCharacters));
             }, [selectedCharacters]);
 
-            // Limpiar asignaciones huérfanas si se elimina un jugador
             useEffect(() => {
                 const playerIds = new Set(players.map(p => p.id));
                 setSelectedCharacters(prev => prev.filter(sc => playerIds.has(sc.playerId)));
             }, [players]);
 
-            // Regla: cada jugador debe tener al menos un personaje
             const allPlayersHaveCharacter = useMemo(() => {
                 return players.length > 0 && players.every(p => selectedCharacters.some(sc => sc.playerId === p.id));
             }, [players, selectedCharacters]);
 
-            // Control de lectura por voz
             const handleVoiceInput = useCallback((spoken) => {
                 if (!storyData || step !== 'story' || difficulty === 'narrada') return;
                 const currentLine = storyData.story[currentStoryIndex];
@@ -201,7 +198,6 @@
                 onResult: handleVoiceInput
             });
 
-            // Narración automática en modo narrado
             useEffect(() => {
                 if (step === 'story' && difficulty === 'narrada' && storyData) {
                     const currentLine = storyData.story[currentStoryIndex];
@@ -215,7 +211,7 @@
                 return () => dialogAudio.stop();
             }, [step, currentStoryIndex, difficulty, storyData, apiKey]);
 
-            const advanceStory = () => {
+            const advanceStory = async () => {
                 resetTranscript();
                 dialogAudio.stop();
 
@@ -223,31 +219,39 @@
                     setCurrentStoryIndex(prev => prev + 1);
                 } else {
                     setStep('generating_video');
-                    const promptQuery = encodeURIComponent('Disney Pixar style 3D cartoon, Mickey Mouse Clubhouse celebration, happy children playing, magical glowing lights, storybook finish --width 800 --height 500');
-                    const sceneUrl = `https://image.pollinations.ai/prompt/${promptQuery}?nologo=true`;
+                    const prompt = `Disney Pixar 3D style celebration, Mickey Mouse Clubhouse, happy cartoon characters celebrating: ${storyData.moral}, colorful volumetric light, 4K rendering`;
 
-                    const img = new Image();
-                    img.src = sceneUrl;
-                    img.onload = () => {
-                        setVideoSceneUrl(sceneUrl);
+                    try {
+                        // Generación de imagen con Gemini Nano Banana 2.1 (o fallback a Omni Flash)
+                        const resultMedia = await generateEventImage(prompt, apiKey);
+                        setMediaUrl(resultMedia);
+                        setIsVideo(false);
                         setStep('video_playing');
                         dialogAudio.speak(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, 'Minnie', apiKey);
-                    };
-                    img.onerror = () => {
-                        setStep('finished');
-                    };
+                    } catch (err) {
+                        console.warn('Error al generar escena con gemini-nano-banana-2.1, intentando video con gemini-omni-1.1-flash...', err);
+                        try {
+                            const videoMedia = await generateEventVideo(prompt, apiKey);
+                            setMediaUrl(videoMedia);
+                            setIsVideo(true);
+                            setStep('video_playing');
+                            dialogAudio.speak(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, 'Minnie', apiKey);
+                        } catch (videoErr) {
+                            console.error('Fallo en generación de evento:', videoErr);
+                            setStep('finished');
+                        }
+                    }
                 }
             };
 
             const assignCharacter = (char) => {
                 if (!activePlayerId) return;
                 setSelectedCharacters(prev => {
-                    const alreadyAssigned = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
-                    if (alreadyAssigned) {
+                    const exists = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
+                    if (exists) {
                         return prev.filter(sc => !(sc.char.id === char.id && sc.playerId === activePlayerId));
                     }
-                    const withoutChar = prev.filter(sc => sc.char.id !== char.id);
-                    return [...withoutChar, { char, playerId: activePlayerId }];
+                    return [...prev.filter(sc => sc.char.id !== char.id), { char, playerId: activePlayerId }];
                 });
             };
 
@@ -280,7 +284,7 @@
                     setStep('positioning');
                 } catch (err) {
                     console.error(err);
-                    setErrorMessage(err.message || 'Error al conectar con Gemini.');
+                    setErrorMessage(err.message || 'Error al conectar con Gemini 3.1 Flash-Lite.');
                     setStep('error');
                 }
             };
@@ -290,7 +294,7 @@
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="text-7xl mb-4 animate-bounce">✨</div>
-                        <h2 className="text-3xl font-extrabold text-slate-800">Creando la aventura mágica...</h2>
+                        <h2 className="text-3xl font-extrabold text-slate-800">Creando la aventura con Gemini 3.1...</h2>
                         <p className="text-pink-500 font-bold mt-2">Repartiendo los turnos entre los jugadores estrella.</p>
                     </div>
                 );
@@ -317,8 +321,8 @@
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-6 mx-auto"></div>
-                        <h2 className="text-3xl font-extrabold text-slate-800">Creando el video final mágico...</h2>
-                        <p className="text-pink-500 font-bold mt-2">¡Pintando la moraleja de la historia!</p>
+                        <h2 className="text-3xl font-extrabold text-slate-800">Generando escena del evento...</h2>
+                        <p className="text-pink-500 font-bold mt-2">Pintando la moraleja con Gemini Nano Banana / Omni Flash.</p>
                     </div>
                 );
             }
@@ -330,8 +334,12 @@
                             <h1 className="text-2xl sm:text-3xl font-black text-white mb-5 text-center tracking-wide">
                                 🎬 ¡Fin de la Aventura!
                             </h1>
-                            <div className="video-player-container">
-                                <img src={videoSceneUrl} alt="Escena del Video Final" className="video-scene-image" />
+                            <div className="video-player-container flex items-center justify-center bg-black">
+                                {isVideo ? (
+                                    <video src={mediaUrl} autoPlay loop playsInline className="w-full h-full object-cover" />
+                                ) : (
+                                    <img src={mediaUrl} alt="Escena Final" className="video-scene-image" />
+                                )}
                                 <div className="absolute top-3 left-3 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow">
                                     En Vivo
                                 </div>
@@ -467,7 +475,7 @@
                                 </div>
                                 <p className="text-xs sm:text-sm font-extrabold text-slate-700 bg-white/90 px-5 py-1.5 rounded-full shadow-sm">
                                     {difficulty === 'narrada'
-                                        ? "Escuchando el cuento narrado..."
+                                        ? "Escuchando con Gemini 3.8 Flash-Lite TTS..."
                                         : (isAction ? "¡Haz el sonido y mueve el muñeco!" : "Lee en voz alta para avanzar")}
                                 </p>
                                 {transcript && difficulty !== 'narrada' && (
@@ -481,7 +489,7 @@
                 );
             }
 
-            /* WIZARD DE CONFIGURACIÓN */
+            /* WIZARD */
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col">
                     <header className="text-center mb-6 pt-2">
@@ -514,12 +522,11 @@
                             ))}
                         </div>
 
-                        {/* PASO 0: CLAVE MÁGICA */}
+                        {/* PASO 0: API KEY */}
                         {wizardStep === 0 && (
                             <div className="max-w-md mx-auto">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-2">Paso 0: Clave Mágica</h3>
                                 <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave de Gemini para jugar.</p>
-
                                 <input
                                     type="password"
                                     placeholder="Pega tu clave AIzaSy..."
@@ -542,7 +549,6 @@
                             <div className="max-w-xl mx-auto">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 1: Jugadores</h3>
                                 <p className="text-sm font-medium text-slate-500 text-center mb-6">¿Quiénes van a jugar hoy?</p>
-
                                 <div className="space-y-3 mb-6">
                                     {players.map((p) => (
                                         <div key={p.id} className="flex items-center bg-white rounded-2xl px-5 py-3 border-2 border-slate-100 shadow-sm transition hover:border-slate-200">
@@ -564,7 +570,6 @@
                                         </div>
                                     )}
                                 </div>
-
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                                     <button onClick={() => addPlayer(true)} className="border-2 border-dashed border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-extrabold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
                                         <span>⭐</span> Agregar Niño Estrella
@@ -573,7 +578,6 @@
                                         <span>👤</span> Agregar Amigo
                                     </button>
                                 </div>
-
                                 <button
                                     onClick={() => {
                                         if (players.length > 0 && !activePlayerId) setActivePlayerId(players[0].id);
@@ -592,7 +596,6 @@
                             <div>
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 2: Asignar Personajes</h3>
                                 <p className="text-sm font-medium text-slate-500 text-center mb-6">Toca el nombre del jugador y luego elige su personaje.</p>
-
                                 <div className="flex flex-wrap gap-2 justify-center mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                                     {players.map(p => {
                                         const count = selectedCharacters.filter(sc => sc.playerId === p.id).length;
@@ -616,7 +619,6 @@
                                     {CHARACTERS.map(c => {
                                         const assignedData = selectedCharacters.find(sc => sc.char.id === c.id);
                                         const ownerPlayer = assignedData ? players.find(p => p.id === assignedData.playerId) : null;
-
                                         return (
                                             <div
                                                 key={c.id}
@@ -666,7 +668,7 @@
                             </div>
                         )}
 
-                        {/* PASO 3: DIFICULTAD (50% Narrada, 50% dividida entre los otros 3) */}
+                        {/* PASO 3: DIFICULTAD */}
                         {wizardStep === 3 && (
                             <div className="max-w-3xl mx-auto">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 3: Nivel de Lectura</h3>
@@ -677,7 +679,7 @@
                                         { id: 'facil', icon: '🎂', title: '1) Fácil', desc: 'Sonidos y risas', tag: '3 a 4 años' },
                                         { id: 'medio', icon: '🧸', title: '2) Medio', desc: 'Palabras clave', tag: '5 años' },
                                         { id: 'dificil', icon: '🚀', title: '3) Difícil', desc: 'Leer frases largas', tag: '6+ años' },
-                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'El dispositivo lee el cuento en voz alta', tag: 'Sin lectura' }
+                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'Gemini 3.8 Flash-Lite TTS', tag: 'Sin lectura' }
                                     ].map(lvl => {
                                         const isSelected = difficulty === lvl.id;
                                         const colSpan = lvl.id === 'narrada' ? 'sm:col-span-3' : 'sm:col-span-1';

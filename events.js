@@ -1,3 +1,4 @@
+// events.js
 const { useState, useEffect, useRef } = React;
 
 export function useSpeechRecognition({ onResult, enabled, lang = 'es-ES' }) {
@@ -54,54 +55,47 @@ export function useSpeechRecognition({ onResult, enabled, lang = 'es-ES' }) {
     return { isListening, transcript, resetTranscript: () => setTranscript('') };
 }
 
-export function evaluateSpeechProgress(spoken, currentLine, difficulty) {
+export function evaluateSpeechProgress(spoken, currentLine, difficulty = 'facil') {
     if (!spoken || !currentLine) return false;
 
-    if (currentLine.type === 'action') {
+    if (currentLine.type === 'action' || currentLine.type === 'image_event' || currentLine.type === 'video_event') {
         return spoken.length > 2;
     }
 
     const targets = currentLine.target_words || [];
+    if (targets.length === 0) return spoken.length > 2;
+
     const matches = targets.filter(w => spoken.includes(w.toLowerCase())).length;
 
     if (difficulty === 'facil') {
-        return spoken.length > 1;
+        return matches >= 1 || spoken.length > 3;
     }
     if (difficulty === 'medio') {
-        return matches >= Math.max(1, Math.floor(targets.length * 0.4)) || targets.length === 0;
+        return matches >= Math.max(1, Math.floor(targets.length * 0.4));
     }
     if (difficulty === 'dificil') {
-        return matches >= Math.max(1, Math.ceil(targets.length * 0.75)) || targets.length === 0;
+        return matches >= Math.max(1, Math.ceil(targets.length * 0.75));
     }
 
     return false;
 }
 
-/**
- * Genera una ilustración usando Gemini Nano Banana 2.1
- */
 export async function generateEventImage(promptText, apiKey) {
     const cleanKey = apiKey?.trim();
-    if (!cleanKey) return null;
+    if (!cleanKey || !promptText) return null;
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-nano-banana-2.1:generateContent?key=${cleanKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${cleanKey}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }],
-                generationConfig: {
-                    responseModalities: ['IMAGE']
-                }
+                contents: [{ parts: [{ text: `Generate a high quality cartoon illustration for a kids book: ${promptText}` }] }],
+                generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
             })
         });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error(`[Gemini Nano Banana 2.1 Error ${response.status}]:`, errText);
-            return null;
-        }
+        if (!response.ok) return null;
 
         const data = await response.json();
         const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
@@ -109,37 +103,27 @@ export async function generateEventImage(promptText, apiKey) {
             return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
         }
     } catch (err) {
-        console.error('[Gemini Nano Banana 2.1 Fallo]:', err);
+        console.warn('[EventImage Fallback al fondo base]:', err);
     }
-
     return null;
 }
 
-/**
- * Genera el clip de video final usando Gemini Omni 1.1 Flash
- */
 export async function generateEventVideo(promptText, apiKey) {
     const cleanKey = apiKey?.trim();
-    if (!cleanKey) return null;
+    if (!cleanKey || !promptText) return null;
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-omni-1.1-flash:generateContent?key=${cleanKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${cleanKey}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }],
-                generationConfig: {
-                    responseModalities: ['VIDEO']
-                }
+                contents: [{ parts: [{ text: `Generate a short animated clip: ${promptText}` }] }],
+                generationConfig: { responseModalities: ['VIDEO', 'TEXT'] }
             })
         });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error(`[Gemini Omni 1.1 Flash Error ${response.status}]:`, errText);
-            return null;
-        }
+        if (!response.ok) return null;
 
         const data = await response.json();
         const videoPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
@@ -147,8 +131,7 @@ export async function generateEventVideo(promptText, apiKey) {
             return `data:${videoPart.inlineData.mimeType || 'video/mp4'};base64,${videoPart.inlineData.data}`;
         }
     } catch (err) {
-        console.error('[Gemini Omni 1.1 Flash Fallo]:', err);
+        console.warn('[EventVideo Fallback]:', err);
     }
-
     return null;
 }

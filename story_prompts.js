@@ -1,19 +1,13 @@
 import { ZONES_PROMPT_LIST, MAP_ZONES } from './fondos.js';
-import { CHARACTERS } from './personajes.js';
-import { NPCS } from './npc.js';
+import { CHARACTERS, NPCS } from './personajes.js';
 
-// Modelo actualizado según la API oficial
-const MODEL_NAME = 'gemini-3.8-flash';
+const NPCS_PROMPT_LIST = NPCS.map(n => `- "${n.name}": ${n.subtitle}`).join('\n');
 
-/**
- * Normaliza y valida cada panel/slide generado por Gemini,
- * detectando correctamente diálogos, fotos y videos sin pisar los tipos.
- */
 export function normalizePanel(panel, players = [], selectedCharacters = []) {
     let text = (panel.text || '').trim();
     let character = (panel.character || '').trim();
 
-    // Eliminar prefijos tipo "Minnie: ..."
+    // Limpia posibles prefijos repetidos tipo "Minnie: ..."
     const prefixMatch = text.match(/^([A-Za-zÁ-ÿ\s\(\)]+):\s*(.+)$/s);
     if (prefixMatch) {
         if (!character || character.toLowerCase() === 'todos') {
@@ -22,73 +16,40 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         text = prefixMatch[2].trim();
     }
 
-    // Detección robusta del tipo de viñeta
-    let rawType = (panel.type || '').toLowerCase().trim();
-    let type = 'dialogue';
-
-    if (rawType.includes('video') || rawType === 'animacion') {
-        type = 'video_event';
-    } else if (
-        rawType.includes('image') ||
-        rawType.includes('imagen') ||
-        rawType.includes('foto') ||
-        rawType.includes('event') ||
-        rawType.includes('action')
-    ) {
-        type = 'image_event';
-    } else if (rawType.includes('dialog') || rawType.includes('char')) {
-        type = 'dialogue';
-    } else if (panel.event_description && !panel.text) {
-        type = 'image_event';
-    }
-
-    // Búsqueda en personajes jugables
-    let matchedChar = CHARACTERS.find(c =>
+    // Buscar en personajes principales y NPCs
+    const allKnownCharacters = [...CHARACTERS, ...NPCS];
+    let matchedChar = allKnownCharacters.find(c =>
         c.name.toLowerCase() === character.toLowerCase() ||
         c.id.toLowerCase() === character.toLowerCase() ||
         character.toLowerCase().includes(c.name.toLowerCase())
     );
 
-    // Búsqueda en NPCs si no es jugable
-    let isNpc = false;
-    let npcObj = null;
-    if (!matchedChar) {
-        npcObj = NPCS.find(n =>
-            n.name.toLowerCase() === character.toLowerCase() ||
-            n.id.toLowerCase() === character.toLowerCase() ||
-            character.toLowerCase().includes(n.name.toLowerCase())
-        );
-        if (npcObj) {
-            isNpc = true;
-            character = npcObj.name;
-        }
-    } else {
+    const isNpc = NPCS.some(n => n.name.toLowerCase() === character.toLowerCase() || n.id.toLowerCase() === character.toLowerCase());
+
+    if (!matchedChar && selectedCharacters.length > 0) {
+        matchedChar = selectedCharacters[0].char;
+        character = matchedChar.name;
+    } else if (matchedChar) {
         character = matchedChar.name;
     }
 
-    if (!matchedChar && !npcObj && selectedCharacters.length > 0 && type === 'dialogue') {
-        matchedChar = selectedCharacters[0].char || selectedCharacters[0];
-        character = matchedChar.name;
-    }
-
-    // Asignación de jugador
     let assignedPlayer = null;
-    if (matchedChar) {
-        const assignment = selectedCharacters.find(sc => (sc.char?.id || sc.id) === matchedChar.id);
+    if (matchedChar && !isNpc) {
+        const assignment = selectedCharacters.find(sc => sc.char.id === matchedChar.id);
         if (assignment) {
             assignedPlayer = players.find(p => p.id === assignment.playerId);
         }
     }
 
+    // Si es un NPC, le asignamos una etiqueta y color distintivo
     const playerName = isNpc
-        ? 'Travieso'
+        ? `Amigo del Mapa (${character})`
         : (panel.player_name || assignedPlayer?.name || players[0]?.name || 'Jugador 1');
 
     const playerColor = isNpc
-        ? '#8B5CF6'
+        ? '#F59E0B'
         : (panel.player_color || assignedPlayer?.color || players[0]?.color || '#EC4899');
 
-    // Mapeo seguro de zonas
     let rawLoc = (panel.locationId || '').toLowerCase().trim();
     let locationId = 'minnie_living';
 
@@ -118,219 +79,135 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
 
     return {
         ...panel,
-        type,
-        character: type === 'dialogue' ? character : (character || 'Minnie'),
-        is_npc: isNpc,
-        npc_data: npcObj,
-        characters_involved: panel.characters_involved || [character || 'Minnie'],
+        character,
         player_name: playerName,
         player_color: playerColor,
         text,
         locationId,
-        event_description: panel.event_description || panel.prompt || text,
+        type: panel.type || 'dialogue',
         onomatopoeia: panel.onomatopoeia || '¡WIII!'
     };
 }
 
-/**
- * Generador principal: coordina las 2 fases de 16 paneles para garantizar
- * un total de 32 viñetas variadas con ritmo South Park para preescolares.
- */
 export async function generateStoryPrompt({ players, selectedCharacters, apiKey }) {
     const cleanKey = apiKey?.trim();
     if (!cleanKey) throw new Error('Se requiere una Clave API de Gemini válida.');
 
-    const starPlayers = players.filter(p => p.isStar);
-    const starNames = starPlayers.map(p => p.name).join(', ') || 'Los niños estrella';
-
     const playersPrompt = players.map(p => {
-        const chars = selectedCharacters
-            .filter(sc => sc.playerId === p.id)
-            .map(sc => sc.char?.name || sc.name);
-        return `- ${p.name} (Color: ${p.color}, Estrella: ${p.isStar ? 'SÍ (Protagonista)' : 'NO (Amigo)'}) controla a: ${chars.length > 0 ? chars.join(', ') : 'Ninguno'}`;
+        const chars = selectedCharacters.filter(sc => sc.playerId === p.id).map(sc => sc.char.name);
+        return `- ${p.name} (Color: ${p.color}, Estrella: ${p.isStar ? 'SI' : 'NO'}) controla a: ${chars.length > 0 ? chars.join(', ') : 'Ninguno'}`;
     }).join('\n');
 
-    const npcsPromptList = NPCS.map(n => `- "${n.name}" (${n.id}): ${n.subtitle}`).join('\n');
+    const charNames = selectedCharacters.map(sc => sc.char.name).join(', ');
 
-    // FASE 1: Paneles 1 al 16 (Inicio, reunión, misterio y rastro)
-    const promptFase1 = `
-Eres un guionista senior de Disney Junior experto en la estructura de causa y efecto de South Park ("POR LO TANTO... / PERO...").
-Crea la FASE 1 (PANELES 1 AL 16) de un misterio infantil interactivo para niñas de 4 a 6 años.
+    const prompt = `
+Crea una historieta / cómic interactivo infantil (4 a 6 años) de entre 12 y 20 viñetas en estricto orden cronológico.
 
-JUGADORES:
+Personajes principales de los jugadores: ${charNames}.
+Jugadores:
 ${playersPrompt}
 
-PERSONAJES ESTRELLA: ${starNames}
+PERSONAJES SECUNDARIOS / NPCs DEL MAPA (Involúcralos activamente en eventos y diálogos):
+${NPCS_PROMPT_LIST}
 
-ANTAGONISTAS DISPONIBLES (Elige a UNO de ellos para toda la historia):
-${npcsPromptList}
-
-UBICACIONES OBLIGATORIAS:
+UBICACIONES OBLIGATORIAS (Usa ÚNICAMENTE estas claves en locationId):
 ${ZONES_PROMPT_LIST}
 
-REGLAS DE LA FASE 1 (DEBES RESPETAR EXACTAMENTE EL TIPO DE CADA PANEL DEL 1 AL 16):
-- Panel 1 (dialogue): Apertura del personaje estrella jugando.
-- Panel 2 (image_event): Foto de lo que estaba haciendo el personaje estrella.
-- Panel 3 (video_event): El personaje estrella corre a saludar a sus amigos.
-- Panel 4 (dialogue): Diálogo con un amigo.
-- Panel 5 (dialogue): Respuesta del amigo proponiendo un juego.
-- Panel 6 (image_event): Foto de todos los amigos jugando alegremente.
-- Panel 7 (dialogue): Celebración del juego.
-- Panel 8 (image_event): ¡LA TRAVESURA DEL NPC! Ocurre algo inexplicable en el mapa (desaparece algo según el NPC elegido).
-- Panel 9 (dialogue): Un personaje descubre lo que falta y da la alarma ("¡POR LO TANTO debemos avisar a todos!").
-- Panel 10 (video_event): Todos los amigos corren a toda velocidad a reunirse en una zona fija.
-- Panel 11 (dialogue): Preguntando qué fue lo que pasó.
-- Panel 12 (image_event): ¡PRIMERA PISTA! Encuentran la pista del NPC (purpurina de Milo, pluma de Teo, cáscara de Lulú, crema de Pipo o marca de rueda de Rayo).
-- Panel 13 (dialogue): Descartando sospechosos con lógica infantil ("¡PERO Pluto no usa purpurina!").
-- Panel 14 (dialogue): Deduciendo hacia dónde seguir buscando.
-- Panel 15 (image_event): Encuentran una segunda pista que apunta hacia otra zona del mapa.
-- Panel 16 (video_event): ¡CASI LO ATRAPAN! El NPC cruza a toda velocidad detrás de ellos, PERO estaban distraídos mirando la pista y no logran ver quién era.
+REGLAS DE NARRATIVA Y PARTICIPACIÓN DE LOS NPCS:
+1. INVOLUCRAR A LOS NPCS: Los eventos extraordinarios ("event") y varios de los diálogos ("dialogue") DEBEN incluir a los NPCs del mapa.
+   - Milo puede esconder algo brillante o pedir ayuda para alcanzarlo.
+   - Don Teo se queda dormido bloqueando un camino o roncando fuerte.
+   - Lulú desafía al equipo a hacer piruetas o malabares.
+   - Pipo pide compartir una merienda o busca ingredientes mágicos.
+   - Rayo Rodante propone una carrera o necesita que le den cuerda.
+2. ORDEN CRONOLÓGICO LINEAL: Cada viñeta ocurre después de la anterior como causa-efecto mientras recorren el mapa.
+3. TIPOS DE VIÑETA:
+   - "dialogue": Charla entre jugadores o de un NPC hablando con los personajes.
+   - "event": Suceso extraordinario o giro inesperado (muchas veces protagonizado por un NPC).
+   - "action": Desafío motor con el muñeco en el mapa.
+4. TEXTO LIMPIO: En "text" pon únicamente lo que se dice, sin prefijos de nombres.
+5. CONCLUYE con 3 choices finales (2 "continue" y 1 "finish").
 
 Devuelve EXCLUSIVAMENTE este JSON válido:
 {
-  "title": "El Misterio de la Travesura en el Club",
-  "moral": "Trabajando en equipo y observando con atención resolvemos cualquier problema",
-  "npc_antagonist": "Nombre exacto del NPC elegido",
-  "phase1_summary": "Resumen en una frase de qué desapareció y hacia dónde huyó el NPC",
+  "title": "Aventura en el Club con Amigos",
+  "moral": "Compartir y ayudarnos entre todos hace que la aventura sea mágica",
   "initial_positions": [
-    { "character": "${selectedCharacters[0]?.char?.name || 'Minnie'}", "locationId": "granja", "description": "en la granja soleada" }
+    { "character": "${selectedCharacters[0]?.char.name || 'Minnie'}", "locationId": "granja", "description": "esperando en la granja" }
   ],
   "panels": [
     {
       "panel_number": 1,
       "type": "dialogue",
-      "character": "${selectedCharacters[0]?.char?.name || 'Minnie'}",
-      "text": "¡Qué mañana tan hermosa para jugar!",
+      "character": "${selectedCharacters[0]?.char.name || 'Minnie'}",
+      "player_name": "${players[0]?.name || 'Jugador 1'}",
+      "player_color": "${players[0]?.color || '#38BDF8'}",
+      "text": "¡Hola a todos! El mapa está brillando... ¡vamos a explorar juntos!",
       "locationId": "granja",
       "onomatopoeia": "¡WIII!",
-      "target_words": ["mañana", "hermosa", "jugar"]
-    }
-  ]
-}`;
-
-    const fase1Data = await executeGeminiRequest(promptFase1, cleanKey);
-    const fase1Panels = fase1Data.panels || [];
-
-    // FASE 2: Paneles 17 al 32 (La deducción, la trampa, el perdón y el festejo)
-    const promptFase2 = `
-Eres un guionista senior de Disney Junior. Continúa la historia creando la FASE 2 (PANELES 17 AL 32) usando "POR LO TANTO... / PERO...".
-
-CONTEXTO DE LA FASE 1:
-- Título: ${fase1Data.title}
-- Antagonista elegido: ${fase1Data.npc_antagonist}
-- Resumen Fase 1: ${fase1Data.phase1_summary || 'Vieron al travieso escapar hacia una nueva zona'}
-- Jugadores: ${playersPrompt}
-
-UBICACIONES OBLIGATORIAS:
-${ZONES_PROMPT_LIST}
-
-REGLAS DE LA FASE 2 (DEBES RESPETAR EXACTAMENTE EL TIPO DE CADA PANEL DEL 17 AL 32):
-- Panel 17 (dialogue): Analizan hacia dónde se dirigió el rastro recién descubierto.
-- Panel 18 (dialogue): A uno de los amigos se le ocurre una gran idea ("¡POR LO TANTO, debemos tenderle una sorpresa!").
-- Panel 19 (image_event): Foto de todos reunidos en círculo planificando la trampa.
-- Panel 20 (dialogue): Repartiendo quién busca cada elemento del señuelo.
-- Panel 21 (image_event): Foto montando la trampa tierna (adaptada al NPC: cofre brillante, almohada suave, pastel, etc.).
-- Panel 22 (dialogue): Avisando que la trampa está lista.
-- Panel 23 (dialogue): Susurrando mientras se esconden detrás de los arbustos.
-- Panel 24 (video_event): ¡EL NPC CAE EN LA TRAMPA! Escena cómica donde el NPC queda atrapado de forma inocente.
-- Panel 25 (dialogue): Los amigos salen de su escondite asombrados al ver quién era.
-- Panel 26 (dialogue): El NPC explica con ternura y timidez por qué hizo la travesura (solo quería jugar o tenía hambre).
-- Panel 27 (image_event): Foto de los amigos abrazando y consolando al NPC.
-- Panel 28 (dialogue): Le proponen compartir y jugar todos juntos.
-- Panel 29 (dialogue): El NPC devuelve lo que tomó y sonríe agradecido.
-- Panel 30 (image_event): Foto de todos compartiendo la merienda o sus juguetes en armonía.
-- Panel 31 (video_event): Gran baile de celebración de todos los amigos y el NPC juntos.
-- Panel 32 (image_event): Fotografía mágica de recuerdo de toda la pandilla unida.
-
-Devuelve EXCLUSIVAMENTE este JSON válido:
-{
-  "panels": [
+      "target_words": ["hola", "mapa", "explorar"]
+    },
     {
-      "panel_number": 17,
-      "type": "dialogue",
-      "character": "${selectedCharacters[0]?.char?.name || 'Minnie'}",
-      "text": "¡Por aquí se fue el rastro misterioso!",
-      "locationId": "parque_juegos",
-      "onomatopoeia": "¡CLIC!",
-      "target_words": ["aquí", "rastro"]
+      "panel_number": 2,
+      "type": "event",
+      "character": "Milo",
+      "player_name": "Amigo del Mapa (Milo)",
+      "player_color": "#F59E0B",
+      "text": "¡De repente, el mapache Milo aparece corriendo con una estrella dorada brillante en sus patitas!",
+      "locationId": "plaza",
+      "onomatopoeia": "¡FSSHHH!",
+      "target_words": ["milo", "mapache", "estrella"]
     }
   ],
   "choices": [
-    { "id": "1", "type": "continue", "text": "Hacer un picnic en la plaza con nuestro nuevo amigo" },
-    { "id": "2", "type": "continue", "text": "Ir a la playa a jugar a las carreras todos juntos" },
-    { "id": "3", "type": "finish", "text": "Cantar la canción final de despedida" }
+    { "id": "1", "type": "continue", "text": "Ayudar a Milo a guardar la estrella en la cúpula amarilla" },
+    { "id": "2", "type": "continue", "text": "Ir a despertar a Don Teo para que no se pierda la fiesta" },
+    { "id": "3", "type": "finish", "text": "Terminar la aventura con una merienda junto a Pipo" }
   ]
 }`;
 
-    const fase2Data = await executeGeminiRequest(promptFase2, cleanKey);
-    const fase2Panels = fase2Data.panels || [];
-
-    // Combinación de los 32 paneles normalizados
-    const allPanelsRaw = [...fase1Panels, ...fase2Panels];
-    const normalizedPanels = allPanelsRaw.map((p, idx) =>
-        normalizePanel({ ...p, panel_number: idx + 1 }, players, selectedCharacters)
-    );
-
+    const data = await executeGeminiRequest(prompt, cleanKey);
+    const rawPanels = data.panels || data.story || [];
     return {
-        title: fase1Data.title || 'Aventura en el Club',
-        moral: fase1Data.moral || 'Compartiendo y trabajando en equipo resolvemos cualquier misterio',
-        npc_antagonist: fase1Data.npc_antagonist || 'Milo',
-        initial_positions: fase1Data.initial_positions || [
-            { character: selectedCharacters[0]?.char?.name || 'Minnie', locationId: 'granja', description: 'en la granja' }
-        ],
-        panels: normalizedPanels,
-        story: normalizedPanels,
-        choices: fase2Data.choices || [
-            { id: "1", type: "continue", text: "Hacer un picnic con nuestro nuevo amigo" },
-            { id: "2", type: "continue", text: "Ir a la playa a jugar todos juntos" },
-            { id: "3", type: "finish", text: "Celebrar con un baile de despedida" }
-        ]
+        ...data,
+        panels: rawPanels.map(p => normalizePanel(p, players, selectedCharacters))
     };
 }
 
-/**
- * Continúa la historia con alternancia estricta de paneles multimedia.
- */
 export async function continueStoryPrompt({ players, selectedCharacters, previousSummary, choiceText, apiKey }) {
     const cleanKey = apiKey?.trim();
     if (!cleanKey) throw new Error('Se requiere una Clave API de Gemini válida.');
 
     const prompt = `
-Continúa el siguiente capítulo de la historieta interactiva infantil (ENTRE 16 Y 20 PANELES).
+Continúa el siguiente capítulo de la historieta infantil en orden cronológico (entre 12 y 20 viñetas).
 
-Momento anterior: ${previousSummary}
-Decisión tomada por los niños: "${choiceText}"
+Contexto anterior: ${previousSummary}
+Los niños eligieron: "${choiceText}"
+
+NPCS DISPONIBLES PARA PARTICIPAR EN DIÁLOGOS Y EVENTOS:
+${NPCS_PROMPT_LIST}
 
 UBICACIONES OBLIGATORIAS:
 ${ZONES_PROMPT_LIST}
 
-REGLAS ESTRICTAS:
-1. Mínimo 16 paneles numerados.
-2. NUNCA coloques más de 2 diálogos seguidos. Alterna continuamente "dialogue" con "image_event" y "video_event".
-3. Causa y efecto ("POR LO TANTO... / PERO...").
-4. Concluye con 3 choices: 2 "continue" y 1 "finish".
+REGLAS:
+1. Involucra a los NPCs en los eventos y conversaciones de forma natural y divertida.
+2. Cada viñeta debe tener su onomatopeya.
+3. Concluye de nuevo con 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
 
-Devuelve EXCLUSIVAMENTE este JSON válido con claves "title", "moral", "panels" y "choices".
+Devuelve EXCLUSIVAMENTE este JSON válido con la misma estructura.
 `;
 
     const data = await executeGeminiRequest(prompt, cleanKey);
     const rawPanels = data.panels || data.story || [];
-    const normalized = rawPanels.map((p, idx) =>
-        normalizePanel({ ...p, panel_number: idx + 1 }, players, selectedCharacters)
-    );
-
     return {
         ...data,
-        panels: normalized,
-        story: normalized
+        panels: rawPanels.map(p => normalizePanel(p, players, selectedCharacters))
     };
 }
 
-/**
- * Comunicación HTTP directa con Gemini 3.8 Flash
- */
-async function executeGeminiRequest(prompt, apiKey, model = MODEL_NAME) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+async function executeGeminiRequest(prompt, apiKey) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
         method: 'POST',
@@ -339,15 +216,14 @@ async function executeGeminiRequest(prompt, apiKey, model = MODEL_NAME) {
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
                 responseMimeType: 'application/json',
-                temperature: 0.7,
-                maxOutputTokens: 16384
+                temperature: 0.7
             }
         })
     });
 
     if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`HTTP ${response.status} en ${model}: ${errText}`);
+        throw new Error(`HTTP ${response.status} en gemini-3.1-flash-lite: ${errText}`);
     }
 
     const data = await response.json();

@@ -1,4 +1,4 @@
-import { CHARACTERS } from './personajes.js';
+import { CHARACTERS, NPCS } from './personajes.js';
 
 class DialogAudioManager {
     constructor() {
@@ -17,28 +17,25 @@ class DialogAudioManager {
 
     getPrebuiltVoice(characterName) {
         const name = (characterName || '').toLowerCase();
-        // Voces agudas y dulces
-        if (name.includes('minnie') || name.includes('daisy') || name.includes('gato')) {
-            return 'Aoede';
-        }
-        // Voces enérgicas / juguetonas
-        if (name.includes('mickey') || name.includes('pluto') || name.includes('auto') || name.includes('ardilla') || name.includes('parro')) {
-            return 'Puck';
-        }
-        // Voces graves / rasposas
-        if (name.includes('donald')) {
+
+        // Voces graves / rasposas o dormilonas
+        if (name.includes('donald') || name.includes('teo')) {
             return 'Fenrir';
+        }
+        // Voces agudas / dulces / femeninas
+        if (name.includes('minnie') || name.includes('daisy') || name.includes('gato') || name.includes('pipo') || name.includes('lulu')) {
+            return 'Aoede';
         }
         if (name.includes('clarabella')) {
             return 'Kore';
         }
+        // Voces juguetonas / enérgicas / veloces (Mickey, Milo, Rayo, Perro, Pluto)
         return 'Puck';
     }
 
     async speak(text, characterName, apiKey) {
         this.stop();
 
-        // Limpia prefijos como "Minnie: ¡Hola!" para que no lea "Minnie dos puntos"
         const cleanText = (text || '').replace(/^[^:]+:\s*/, '').trim();
         if (!cleanText) return;
 
@@ -93,7 +90,7 @@ class DialogAudioManager {
 
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'es-ES';
+            utterance.lang = 'es-UY';
             window.speechSynthesis.speak(utterance);
         }
     }

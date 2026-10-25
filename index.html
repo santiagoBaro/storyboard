@@ -194,13 +194,17 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import { CHARACTERS, PLAYER_COLORS } from './personajes.js';
+        import { CHARACTERS, PLAYER_COLORS, } from './personajes.js';
+        import { NPCS } from './npc.js';
         import { MAP_IMAGE, MAP_ZONES } from './fondos.js';
         import { dialogAudio } from './dialogAudio.js';
         import { useSpeechRecognition, evaluateSpeechProgress, generateEventImage, generateEventVideo } from './events.js';
         import { generateStoryPrompt, continueStoryPrompt } from './story_prompts.js';
 
         const { useState, useEffect, useMemo, useCallback } = React;
+
+        // Lista combinada de personajes y NPCs disponible para toda la app
+        const allAvailableEntities = [...CHARACTERS, ...NPCS];
 
         function App() {
             const urlParams = new URLSearchParams(window.location.search);

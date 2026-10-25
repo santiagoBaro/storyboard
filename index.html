@@ -210,7 +210,7 @@
             const [isUrlKey] = useState(!!keyFromUrl);
 
             const [wizardStep, setWizardStep] = useState(!apiKey ? 0 : 1);
-            const [step, setStep] = useState('setup'); // 'setup' | 'loading_story' | 'generating_images' | 'positioning' | 'story' | 'generating_video' | 'video_playing' | 'error'
+            const [step, setStep] = useState('setup'); // 'setup' | 'loading_story' | 'positioning' | 'story' | 'generating_video' | 'video_playing' | 'error'
 
             const [players, setPlayers] = useState(() => JSON.parse(localStorage.getItem('gemini_story_players') || '[]'));
             const [selectedCharacters, setSelectedCharacters] = useState(() => JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]'));
@@ -223,9 +223,9 @@
             const [chapterCount, setChapterCount] = useState(1);
             const [errorMessage, setErrorMessage] = useState('');
 
-            // Galería de imágenes generadas por IA para TODAS las viñetas
+            // Galería de imágenes generadas por IA y progreso en segundo plano
             const [panelImages, setPanelImages] = useState({});
-            const [imageGenProgress, setImageGenProgress] = useState({ current: 0, total: 0 });
+            const [imageGenProgress, setImageGenProgress] = useState({ current: 0, total: 0, isGenerating: false });
 
             // Video final
             const [videoFinalUrl, setVideoFinalUrl] = useState('');
@@ -268,12 +268,10 @@
             }, [storyData, selectedCharacters]);
 
             /**
-             * Genera las imágenes de todas las viñetas en paralelo por lotes
+             * Genera las imágenes de todas las viñetas en paralelo por lotes EN SEGUNDO PLANO
              */
-            const generateAllPanelImages = async (panelList) => {
-                setStep('generating_images');
-                setImageGenProgress({ current: 0, total: panelList.length });
-                const imagesMap = {};
+            const generateAllPanelImagesInBackground = async (panelList) => {
+                setImageGenProgress({ current: 0, total: panelList.length, isGenerating: true });
                 const batchSize = 3;
                 let completed = 0;
 
@@ -287,17 +285,16 @@
 
                             try {
                                 const imgUri = await generateEventImage(prompt, apiKey);
-                                imagesMap[realIndex] = imgUri;
+                                setPanelImages(prev => ({ ...prev, [realIndex]: imgUri }));
                             } catch (e) {
-                                imagesMap[realIndex] = zone.sceneImage || MAP_IMAGE;
+                                // En caso de fallo, usamos el fondo estándar
+                                setPanelImages(prev => ({ ...prev, [realIndex]: zone.sceneImage || MAP_IMAGE }));
                             }
                             completed++;
-                            setImageGenProgress({ current: completed, total: panelList.length });
+                            setImageGenProgress({ current: completed, total: panelList.length, isGenerating: completed < panelList.length });
                         })
                     );
                 }
-
-                setPanelImages(imagesMap);
             };
 
             // Control por voz
@@ -339,7 +336,7 @@
                 }
             };
 
-            // Iniciar historia: Genera guión + genera todas las imágenes por adelantado
+            // Iniciar historia: Genera guión, avanza a posicionamiento e inicia generación de imágenes en 2do plano
             const handleStartStory = async () => {
                 setStep('loading_story');
                 setErrorMessage('');
@@ -349,10 +346,12 @@
                     setCurrentPositionIndex(0);
                     setActivePanelIndex(0);
                     setChapterCount(1);
+                    setEventImages({}); // Limpiar anteriores
 
-                    // Genera TODAS las imágenes antes de iniciar el juego
-                    await generateAllPanelImages(data.panels);
+                    // Avanzamos directo a colocar las fichas
                     setStep('positioning');
+                    // Y generamos las imágenes por detrás (fuego y olvido)
+                    generateAllPanelImagesInBackground(data.panels || data.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage(err.message || 'Error al conectar con Gemini.');
@@ -365,7 +364,7 @@
                 dialogAudio.stop();
 
                 if (choice.type === 'finish' || choice.id === '3') {
-                    // Generar Video Final de la Historia con Gemini Omni Flash
+                    // Generar Video Final
                     setStep('generating_video');
                     const videoPrompt = `Disney Pixar 3D animated celebration video, Mickey Mouse Clubhouse friends celebrating happily together: ${storyData?.moral || 'compartir y divertirse'}. Confetti, warm volumetric lighting, high quality cinematic render, joyful story finish.`;
 
@@ -375,7 +374,6 @@
                             setVideoFinalUrl(videoUri);
                             setIsVideoOutput(true);
                         } else {
-                            // Fallback con imagen panorámica animada
                             const imgUri = await generateEventImage(videoPrompt, apiKey);
                             setVideoFinalUrl(imgUri);
                             setIsVideoOutput(false);
@@ -392,7 +390,7 @@
                     return;
                 }
 
-                // Si continúa, genera nuevo capítulo + nuevas imágenes para todas las viñetas
+                // Continúa la historia
                 setStep('loading_story');
                 try {
                     const summary = panels.map(p => `[${p.type}] ${p.character}: ${p.text}`).join(' ');
@@ -408,14 +406,16 @@
                         ...prev,
                         title: nextData.title || prev.title,
                         moral: nextData.moral || prev.moral,
-                        panels: nextData.panels || [],
+                        panels: nextData.panels || nextData.story || [],
                         choices: nextData.choices || []
                     }));
                     setActivePanelIndex(0);
                     setChapterCount(c => c + 1);
+                    setPanelImages({});
 
-                    await generateAllPanelImages(nextData.panels);
                     setStep('story');
+                    // Genera imágenes en segundo plano del nuevo capítulo
+                    generateAllPanelImagesInBackground(nextData.panels || nextData.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage('No pudimos generar la continuación de la historia.');
@@ -452,34 +452,13 @@
                 setPlayers(players.map(p => p.id === id ? { ...p, name: newName } : p));
             };
 
-            /* PANTALLAS DE CARGA */
+            /* VISTAS DE CARGA */
             if (step === 'loading_story') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="text-7xl mb-4 animate-bounce">📚</div>
                         <h2 className="text-3xl font-black text-slate-800">Escribiendo la historia con Gemini 3.1...</h2>
                         <p className="text-pink-500 font-bold mt-2">Creando viñetas de diálogo, acción y eventos extraordinarios.</p>
-                    </div>
-                );
-            }
-
-            if (step === 'generating_images') {
-                const pct = imageGenProgress.total > 0 ? Math.round((imageGenProgress.current / imageGenProgress.total) * 100) : 0;
-                return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
-                        <div className="text-7xl mb-4 animate-bounce">🎨</div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-2">Pintando todas las viñetas con IA...</h2>
-                        <p className="text-slate-600 font-bold text-sm mb-6">
-                            Ilustrando viñeta {imageGenProgress.current} de {imageGenProgress.total} con Gemini Nano Banana 2.1
-                        </p>
-
-                        <div className="w-full bg-slate-200 rounded-full h-5 p-1 border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] mb-3">
-                            <div
-                                className="bg-gradient-to-r from-pink-500 to-amber-400 h-full rounded-full transition-all duration-300"
-                                style={{ width: `${pct}%` }}
-                            />
-                        </div>
-                        <span className="font-comic text-xl text-slate-900">{pct}% completado</span>
                     </div>
                 );
             }
@@ -553,7 +532,17 @@
                 const zone = MAP_ZONES[pos?.locationId] || { x: '50%', y: '50%', scale: 2.0, name: pos?.description || 'El Club', detail: '' };
 
                 return (
-                    <div className="min-h-screen flex flex-col items-center p-4 max-w-xl mx-auto justify-center">
+                    <div className="min-h-screen flex flex-col items-center p-4 max-w-xl mx-auto justify-center relative">
+                        {/* Indicador de proceso IA en segundo plano */}
+                        {imageGenProgress.isGenerating && (
+                            <div className="fixed top-4 right-4 bg-white/90 backdrop-blur-md border-2 border-slate-900 rounded-full px-4 py-2 flex items-center gap-2 shadow-[4px_4px_0px_#0f172a] z-50">
+                                <div className="w-4 h-4 border-2 border-slate-300 border-t-pink-500 rounded-full animate-spin" />
+                                <span className="text-xs font-black text-slate-800">
+                                    Pintando viñetas ({imageGenProgress.current}/{imageGenProgress.total})
+                                </span>
+                            </div>
+                        )}
+
                         <div className="bg-yellow-300 border-2 border-slate-900 px-6 py-1.5 rounded-full font-black text-xs uppercase tracking-wider mb-3 shadow-[3px_3px_0px_#0f172a]">
                             🗺️ Preparando el tablero ({currentPositionIndex + 1} de {initialPositions.length})
                         </div>
@@ -605,7 +594,7 @@
                 );
             }
 
-            /* PANTALLA PRINCIPAL: CÓMIC CON TODAS LAS ILUSTRACIONES IA YA LISTAS */
+            /* PANTALLA PRINCIPAL: CÓMIC CON TODAS LAS ILUSTRACIONES IA */
             if (step === 'story' && storyData && panels.length > 0) {
                 const activePanel = panels[activePanelIndex] || panels[0];
                 const isLastPanel = activePanelIndex === panels.length - 1;
@@ -614,10 +603,23 @@
 
                 const isEvent = activePanel.type === 'event';
                 const isAction = activePanel.type === 'action';
-                const currentPanelAiImage = panelImages[activePanelIndex] || activeZone.sceneImage || MAP_IMAGE;
+
+                // La imagen ya estará lista en panelImages, pero si el usuario avanza muy rápido, mostramos spinner local
+                const currentPanelAiImage = panelImages[activePanelIndex];
+                const isGeneratingCurrentImg = imageGenProgress.isGenerating && !currentPanelAiImage;
 
                 return (
-                    <div className="min-h-screen flex flex-col p-3 sm:p-5 max-w-4xl mx-auto justify-between select-none">
+                    <div className="min-h-screen flex flex-col p-3 sm:p-5 max-w-4xl mx-auto justify-between select-none relative">
+                        {/* Progreso Global de IA en la esquina */}
+                        {imageGenProgress.isGenerating && (
+                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md border-2 border-slate-900 rounded-full px-3 py-1 flex items-center gap-2 shadow-[2px_2px_0px_#0f172a] z-50">
+                                <div className="w-3 h-3 border-2 border-slate-300 border-t-pink-500 rounded-full animate-spin" />
+                                <span className="text-[10px] font-black text-slate-800">
+                                    {imageGenProgress.current}/{imageGenProgress.total} IA
+                                </span>
+                            </div>
+                        )}
+
                         {/* Header */}
                         <header className="flex justify-between items-center mb-3 gap-2">
                             <div className="bg-yellow-300 border-3 border-slate-900 px-4 py-2 rounded-2xl font-black text-xs sm:text-sm text-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center gap-2">
@@ -652,11 +654,10 @@
                         {/* Escenario de la Viñeta Activa (Fondo con IA) */}
                         <div className={`relative rounded-[2rem] overflow-hidden border-4 shadow-[8px_8px_0px_#0f172a] min-h-[380px] sm:min-h-[440px] flex flex-col justify-between p-4 sm:p-6 mb-4 ${isEvent ? 'border-amber-500 bg-amber-950' : (isAction ? 'border-yellow-500 bg-yellow-950' : 'border-slate-900 bg-slate-900')}`}>
 
-                            {/* Ilustración de la viñeta creada con IA */}
                             <img
-                                src={currentPanelAiImage}
+                                src={currentPanelAiImage || activeZone.sceneImage || MAP_IMAGE}
                                 alt={activeZone.name}
-                                className="absolute inset-0 w-full h-full object-cover filter brightness-[0.88] contrast-[1.03]"
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${currentPanelAiImage ? 'brightness-95 contrast-[1.02]' : 'filter brightness-[0.80] contrast-[1.05]'}`}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/30 pointer-events-none" />
 
@@ -671,8 +672,9 @@
                                     </div>
 
                                     {isEvent && (
-                                        <span className="bg-amber-400 border-2 border-slate-900 text-slate-900 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#0f172a] uppercase">
-                                            ✨ EVENTO EXTRAORDINARIO
+                                        <span className="bg-amber-400 border-2 border-slate-900 text-slate-900 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#0f172a] uppercase flex items-center gap-1">
+                                            <span>✨</span>
+                                            <span>{currentPanelAiImage ? 'ILUSTRACIÓN CON IA' : 'EVENTO EXTRAORDINARIO'}</span>
                                         </span>
                                     )}
 
@@ -704,27 +706,31 @@
                                             ¡Mueve tu muñeco!
                                         </span>
                                     </div>
-                                ) : isEvent ? (
+                                ) : isGeneratingCurrentImg ? (
+                                    <div className="bg-white/90 backdrop-blur-md border-4 border-slate-900 rounded-3xl p-5 flex flex-col items-center shadow-[6px_6px_0px_#0f172a] animate-pulse">
+                                        <div className="w-10 h-10 border-4 border-slate-300 border-t-pink-500 rounded-full animate-spin mb-3" />
+                                        <span className="font-comic text-lg text-slate-900">Pintando viñeta con IA...</span>
+                                        <span className="text-[10px] font-bold text-slate-600 mt-1">Gemini Nano Banana 2.1</span>
+                                    </div>
+                                ) : isEvent && !currentPanelAiImage ? (
                                     <div className="flex flex-col items-center">
                                         <div className="text-7xl animate-pulse drop-shadow-[0_12px_20px_rgba(0,0,0,0.8)]">🌟</div>
                                         <span className="bg-amber-300 border-2 border-slate-900 px-3 py-0.5 rounded-xl font-black text-xs text-slate-900 mt-1 shadow-[2px_2px_0px_#0f172a]">
                                             ¡Suceso Mágico!
                                         </span>
                                     </div>
-                                ) : (
-                                    activeChar && (
-                                        <div className="flex flex-col items-center animate-float">
-                                            <img
-                                                src={activeChar.image}
-                                                alt={activeChar.name}
-                                                className="w-32 h-32 sm:w-40 sm:h-40 object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)]"
-                                            />
-                                            <span className="mt-1 bg-white border-2 border-slate-900 px-3 py-0.5 rounded-xl text-xs font-black text-slate-900 shadow-[2px_2px_0px_#0f172a]">
-                                                {activeChar.emoji} {activeChar.name}
-                                            </span>
-                                        </div>
-                                    )
-                                )}
+                                ) : !isEvent && activeChar ? (
+                                    <div className="flex flex-col items-center animate-float">
+                                        <img
+                                            src={activeChar.image}
+                                            alt={activeChar.name}
+                                            className="w-32 h-32 sm:w-40 sm:h-40 object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)]"
+                                        />
+                                        <span className="mt-1 bg-white border-2 border-slate-900 px-3 py-0.5 rounded-xl text-xs font-black text-slate-900 shadow-[2px_2px_0px_#0f172a]">
+                                            {activeChar.emoji} {activeChar.name}
+                                        </span>
+                                    </div>
+                                ) : null}
                             </div>
 
                             {/* Globo de Diálogo de Cómic */}
@@ -761,6 +767,7 @@
                                 {panels.map((p, idx) => {
                                     const isCur = idx === activePanelIndex;
                                     const thumb = panelImages[idx];
+                                    const typeIcon = p.type === 'event' ? (thumb ? '🖼️' : '🌟') : (p.type === 'action' ? '⚡' : '💬');
                                     return (
                                         <button
                                             key={idx}
@@ -768,7 +775,7 @@
                                                 dialogAudio.stop();
                                                 setActivePanelIndex(idx);
                                             }}
-                                            className={`comic-panel h-14 relative overflow-hidden bg-slate-900 flex flex-col justify-between p-1 ${isCur ? 'active' : 'opacity-70 hover:opacity-100'}`}
+                                            className={`comic-panel h-14 relative overflow-hidden bg-slate-900 flex flex-col justify-between p-1 ${isCur ? 'active border-pink-500 shadow-[2px_2px_0px_#ec4899]' : 'opacity-70 hover:opacity-100'}`}
                                         >
                                             {thumb && (
                                                 <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover filter brightness-[0.7]" />
@@ -777,7 +784,7 @@
                                                 #{idx + 1}
                                             </span>
                                             <span className="relative z-10 text-[8px] font-black text-white truncate w-full text-center drop-shadow">
-                                                {p.character}
+                                                {typeIcon} {p.character}
                                             </span>
                                         </button>
                                     );
@@ -801,7 +808,7 @@
                                                 className={`border-3 border-slate-900 p-3.5 rounded-2xl font-black text-xs sm:text-sm text-left shadow-[3px_3px_0px_#0f172a] transition active:translate-x-1 active:translate-y-1 flex items-center gap-2.5 ${isFinish ? 'bg-amber-200 hover:bg-amber-300 text-amber-950' : 'bg-white hover:bg-pink-100 text-slate-800'}`}
                                             >
                                                 <span className="text-2xl shrink-0">{isFinish ? '🎬' : '👉'}</span>
-                                                <span className="leading-tight">{isFinish ? `${c.text} (Crear Video IA)` : c.text}</span>
+                                                <span className="leading-tight">{isFinish ? `${c.text} (Crear Video)` : c.text}</span>
                                             </button>
                                         );
                                     })}
@@ -1049,7 +1056,7 @@
 
                     <footer className="text-center py-4 mt-2">
                         <p className="text-[11px] font-bold text-slate-400">
-                            🌸 Cómic infantil interactivo potenciado con Gemini 3.1 & 3.8
+                            🌸 Cómic infantil interactivo potenciado con Gemini 3.1 & 3.8 & Nano Banana
                         </p>
                     </footer>
                 </div>

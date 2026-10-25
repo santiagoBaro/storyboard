@@ -53,7 +53,7 @@
             overflow: hidden;
             border-radius: 1.5rem;
             position: relative;
-            background-color: #93c5fd;
+            background-color: #6ee7b7;
             border: 5px solid white;
             box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.08);
             display: flex;
@@ -136,16 +136,8 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const DEFAULT_MAP_FILENAMES = [
-            'WhatsApp Image 2026-10-24 at 17.27.00_3.jpeg',
-            'WhatsApp%20Image%202026-10-24%20at%2017.27.00_3.jpeg',
-            'WhatsApp Image 2026-10-24 at 17.27.00_2.jpeg',
-            'WhatsApp%20Image%202026-10-24%20at%2017.27.00_2.jpeg',
-            'WhatsApp Image 2026-10-24 at 17.27.00.jpeg',
-            'WhatsApp%20Image%202026-10-24%20at%2017.27.00.jpeg',
-            'mapa.jpg',
-            'mapa.png'
-        ];
+        // MAPA OFICIAL HARDCODEADO EN BASE64 (Carga instantánea sin requerir archivos externos)
+        const MAP_IMAGE = 'data:image/webp;base64,UklGRmgqAABXRUJQVlA4IFwqAABQ9ACdASq4ASABPyV+tFIuKCSirRY+KcAkiWxt1pSJQiwqCo8z9/z0eO+/P6XH7fjPhf9D1nfs...f+dK09sEUGD4dQbvmtfPMZ7BvVuOqYSMZA1nFK4w3jSa8aM4F1tpsaGa7ixgOegqKRdcs3AXWTS60/ThQIenI1U8CeqDrAAAAA==';
 
         const CHARACTERS = [
             { id: 'minnie', name: 'Minnie', subtitle: '¡Vestido de lunares!', emoji: '🎀', image: 'data:image/webp;base64,UklGRlYDAABXRUJQVlA4IEoDAADwDwCdASo9AEgAPtFWoUwoJKMiMBZsAQAaCWQAy4GmdsfdujZFdQbcZZ+l3mpeUyq38GTPYh8xdtXv69y7Nuq7UUMX71OW0Z72/Pp9/6MEh2Ue4g2u1NbgcJ9dp9FwhQ/U2oJn6t5dB42an+LY84/KsJMvXOCQT1PuUYyPzivfI8dHnh0YSAuAAP78d6MclAhQgg3NDcO0h+DwBOoab2SpO6nNaQgxw7/2YqGUY5TN1BMfcDoGr4C09fxBtqewQyVNxL1JcYFG1c/Tz1kvsAZwE+LuCLnsk+jswSP3JNFhYf66XaNXVfKa5gpZDSx8Itjc3HxZn5iP04cJ/AdvNOxDzbHGRg7irT8a/gU4o7KKGB8CXMY2iwgPdvDQ5gzFwsLe6HpHFF/yGnOu6PicnuURpZij3jih2DtvxzWSZL+Iol1urM2IETZpc12Lgm5q44GAapC12Vun8mcBD7eQNQVxHXfYj+YoCus+uX4A87Ts6uR/Ea8wK9AOnG8uu3/5nSd3O6dYd8/SOhT+VF5fzZOfdFcw+WoaWEEGRiJo2D5ScpqZ2ZcRy5C0T4XpzPa/ub9J84pvLZ01OG261FyLATQyZVOe08YEgndjY9t229hhP9R5qXylWQoMDB+xsJrSQZq3HHDkAhRLq9kKzaLxwPOiic+OzHZaCep8xjvyOms8O7h3VxiINGwA6N+ea2MDrdj28dnnkBHLuzQHuoOznQQ25+hicxJeTC+4x78Ee7NLMBds6c6kL+9K+WNskMGlV3A2Z0ZwGrlDxqaiP9phmyCe/Wtpt6/wxtbJQNVVhZJlcdOjf/fFKnILfoFBlQb2KnQqg4kDaAyn4XWNlksT2tMBWpQ90tk2PTt9qbRnz9akFXidv1h6hVA7OQwtccrsWm/g47yM9pYKTzfgy5BcdksU703bqMUQMTJFmF5l/m6CmcH+qg0sxHOzDc6kJsKTYlyrgYDR6KTgy5KtrC8xUsC8/yt3+ywWQE/tkiD2ZLJx43LkrrrO/MGG4Y/1X+4JfpViwC94K/yh0BRwvDj/ed0OUSqaDc4KsmNo7tm3etHsl9WcZabTKIxPoQvbzhL/zuzExt8leVSEgEgC9lgYvKb93UUaaITIP0QAAA==' },
@@ -191,11 +183,6 @@
             const [step, setStep] = useState('setup');
             const [videoSceneUrl, setVideoSceneUrl] = useState('');
 
-            // MAPA: Comprueba si el usuario subió una imagen personalizada guardada
-            const customMapData = localStorage.getItem('custom_map_image_b64') || '';
-            const [mapIndex, setMapIndex] = useState(0);
-            const [currentMapSrc, setCurrentMapSrc] = useState(customMapData || DEFAULT_MAP_FILENAMES[0]);
-
             const savedPlayers = JSON.parse(localStorage.getItem('gemini_story_players') || '[]');
             const [players, setPlayers] = useState(savedPlayers);
 
@@ -215,27 +202,6 @@
             const handleSaveKey = (val) => {
                 setApiKey(val);
                 localStorage.setItem('gemini_story_key', val.trim());
-            };
-
-            const handleImageError = () => {
-                if (!customMapData && mapIndex < DEFAULT_MAP_FILENAMES.length - 1) {
-                    const nextIndex = mapIndex + 1;
-                    setMapIndex(nextIndex);
-                    setCurrentMapSrc(DEFAULT_MAP_FILENAMES[nextIndex]);
-                }
-            };
-
-            const handleCustomMapUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const b64 = event.target.result;
-                    localStorage.setItem('custom_map_image_b64', b64);
-                    setCurrentMapSrc(b64);
-                    alert("¡Mapa cargado con éxito en tu dispositivo!");
-                };
-                reader.readAsDataURL(file);
             };
 
             // RECONOCIMIENTO DE VOZ
@@ -515,7 +481,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 
 
             /* ==============================================================
-             * VISTAS SECUNDARIAS Y PANTALLAS DE JUEGO
+             * VISTAS SECUNDARIAS
              * ============================================================== */
             if (step === 'loading') {
                 return (
@@ -544,7 +510,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PANTALLA 1: LOADER DEL VIDEO FINAL
+            // LOADER DEL VIDEO FINAL
             if (step === 'generating_video') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
@@ -555,7 +521,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PANTALLA 2: REPRODUCTOR DE VIDEO FINAL
+            // REPRODUCTOR DE VIDEO FINAL
             if (step === 'video_playing') {
                 return (
                     <div className="min-h-screen flex flex-col p-4 sm:p-6 max-w-xl mx-auto justify-center">
@@ -584,7 +550,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PANTALLA DE POSICIONAMIENTO EN EL MAPA
+            // PASO DE COLOCAR LAS PIEZAS CON MAPA HARDCODEADO
             if (step === 'positioning' && storyData) {
                 const pos = storyData.initial_positions[currentPositionIndex];
                 const charObj = CHARACTERS.find(c => c.name.toLowerCase() === pos.character.toLowerCase()) || { name: pos.character, image: '', emoji: '🧸' };
@@ -610,9 +576,8 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 
                             <div className="map-viewport mb-6">
                                 <img
-                                    src={currentMapSrc}
+                                    src={MAP_IMAGE}
                                     alt="Mapa de Juego"
-                                    onError={handleImageError}
                                     className="map-stage-image"
                                     style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }}
                                 />
@@ -638,7 +603,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PANTALLA DE LECTURA / NARRACIÓN DEL CUENTO
+            // PANTALLA DE DIÁLOGO / ACCIÓN
             if (step === 'story' && storyData) {
                 const current = storyData.story[currentStoryIndex];
                 const isAction = current.type === 'action';
@@ -668,8 +633,8 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                     Turno: {current.player_name}
                                 </span>
 
-                                <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-slate-200 relative flex items-center justify-center">
-                                    <img src={currentMapSrc} alt="Zona" onError={handleImageError} className="z-10"
+                                <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-white relative flex items-center justify-center">
+                                    <img src={MAP_IMAGE} alt="Zona" className="z-10"
                                         style={{ position: 'absolute', left: '50%', top: '50%', width: '320px', maxWidth: 'none', transformOrigin: '0 0', transform: `scale(${zone.scale * 0.7}) translate(-${zone.x}, -${zone.y})` }} />
                                 </div>
                             </div>
@@ -734,7 +699,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 
 
             /* ==============================================================
-             * ASISTENTE DE CONFIGURACIÓN (WIZARD)
+             * CONFIGURACIÓN INICIAL (WIZARD)
              * ============================================================== */
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col">
@@ -747,17 +712,11 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                             ¡Armemos la Historia!
                         </h1>
-                        <div className="flex items-center justify-center gap-4 mt-2">
-                            {!isUrlKey && wizardStep > 0 && (
-                                <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline hover:text-slate-600">
-                                    Modificar Clave Mágica
-                                </button>
-                            )}
-                            <label className="text-xs font-bold text-pink-600 underline cursor-pointer hover:text-pink-800">
-                                🗺️ Seleccionar Imagen del Mapa
-                                <input type="file" accept="image/*" onChange={handleCustomMapUpload} className="hidden" />
-                            </label>
-                        </div>
+                        {!isUrlKey && wizardStep > 0 && (
+                            <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline mt-2 hover:text-slate-600">
+                                Modificar Clave Mágica
+                            </button>
+                        )}
                     </header>
 
                     <main className="disney-card p-5 sm:p-8 border border-pink-100/70 flex-1">
@@ -911,7 +870,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                             </div>
                         )}
 
-                        {/* PASO 3: DIFICULTAD Y LANZAMIENTO */}
+                        {/* PASO 3: DIFICULTAD Y INICIO */}
                         {wizardStep === 3 && (
                             <div className="animate-fadeIn max-w-2xl mx-auto">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 3: Nivel de Lectura</h3>

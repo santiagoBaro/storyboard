@@ -103,106 +103,16 @@
         ];
 
         const CHARACTERS = [
-            {
-                id: 'minnie',
-                name: 'Minnie',
-                subtitle: '¡Vestido de lunares!',
-                emoji: '🎀',
-                themeColor: '#F472B6',
-                borderActive: 'border-pink-400 bg-pink-50/50',
-                badgeBg: 'bg-pink-500',
-                image: 'data:image/webp;base64,UklGRlYDAABXRUJQVlA4IEoDAADwDwCdASo9AEgAPtFWoUwoJKMiMBZsAQAaCWQAy4GmdsfdujZFdQbcZZ+l3mpeUyq38GTPYh8xdtXv69y7Nuq7UUMX71OW0Z72/Pp9/6MEh2Ue4g2u1NbgcJ9dp9FwhQ/U2oJn6t5dB42an+LY84/KsJMvXOCQT1PuUYyPzivfI8dHnh0YSAuAAP78d6MclAhQgg3NDcO0h+DwBOoab2SpO6nNaQgxw7/2YqGUY5TN1BMfcDoGr4C09fxBtqewQyVNxL1JcYFG1c/Tz1kvsAZwE+LuCLnsk+jswSP3JNFhYf66XaNXVfKa5gpZDSx8Itjc3HxZn5iP04cJ/AdvNOxDzbHGRg7irT8a/gU4o7KKGB8CXMY2iwgPdvDQ5gzFwsLe6HpHFF/yGnOu6PicnuURpZij3jih2DtvxzWSZL+Iol1urM2IETZpc12Lgm5q44GAapC12Vun8mcBD7eQNQVxHXfYj+YoCus+uX4A87Ts6uR/Ea8wK9AOnG8uu3/5nSd3O6dYd8/SOhT+VF5fzZOfdFcw+WoaWEEGRiJo2D5ScpqZ2ZcRy5C0T4XpzPa/ub9J84pvLZ01OG261FyLATQyZVOe08YEgndjY9t229hhP9R5qXylWQoMDB+xsJrSQZq3HHDkAhRLq9kKzaLxwPOiic+OzHZaCep8xjvyOms8O7h3VxiINGwA6N+ea2MDrdj28dnnkBHLuzQHuoOznQQ25+hicxJeTC+4x78Ee7NLMBds6c6kL+9K+WNskMGlV3A2Z0ZwGrlDxqaiP9phmyCe/Wtpt6/wxtbJQNVVhZJlcdOjf/fFKnILfoFBlQb2KnQqg4kDaAyn4XWNlksT2tMBWpQ90tk2PTt9qbRnz9akFXidv1h6hVA7OQwtccrsWm/g47yM9pYKTzfgy5BcdksU703bqMUQMTJFmF5l/m6CmcH+qg0sxHOzDc6kJsKTYlyrgYDR6KTgy5KtrC8xUsC8/yt3+ywWQE/tkiD2ZLJx43LkrrrO/MGG4Y/1X+4JfpViwC94K/yh0BRwvDj/ed0OUSqaDc4KsmNo7tm3etHsl9WcZabTKIxPoQvbzhL/zuzExt8leVSEgEgC9lgYvKb93UUaaITIP0QAAA=='
-            },
-            {
-                id: 'mickey',
-                name: 'Mickey',
-                subtitle: '¡Líder de la casa!',
-                emoji: '🐭',
-                themeColor: '#FB923C',
-                borderActive: 'border-orange-400 bg-orange-50/50',
-                badgeBg: 'bg-orange-500',
-                image: 'data:image/webp;base64,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'
-            },
-            {
-                id: 'donald',
-                name: 'Donald',
-                subtitle: '¡Gorra marinera!',
-                emoji: '🦆',
-                themeColor: '#38BDF8',
-                borderActive: 'border-sky-400 bg-sky-50/50',
-                badgeBg: 'bg-sky-500',
-                image: 'data:image/webp;base64,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'
-            },
-            {
-                id: 'daisy',
-                name: 'Daisy',
-                subtitle: '¡Lazo morado coqueto!',
-                emoji: '🌼',
-                themeColor: '#C084FC',
-                borderActive: 'border-purple-400 bg-purple-50/50',
-                badgeBg: 'bg-purple-500',
-                image: 'data:image/webp;base64,UklGRiACAABXRUJQVlA4IBQCAACwDACdASo5AEgAPtFcpU2oJSOiKzbbsQAaCWIAzg36qmolYjphzQs9b8O6OhXa9Xg3oQztgO2bZS1y9qwSWLuFUyBOZFr1yspY1yDFdQA1d3omrvJeA7VdGPEdkomI5S7H21yDFD0+Gwj3jqD8AAD++yG1+oa29GvDk2Hc2N13JrUtQ4d2evfy3hM5/f+xYWkWPrjhOPiZgQlNFXFmxiOzofqTwUxkFnNBqOeTn25sYGnzf/ZZZf/xvoEsSeSO/xKvR5tDKc2e5FwMwSmt5eU2ANXR1KSDhzl623ZuJQGWePVEf3g1INbHIjVzbaw9gxO8PmMwjlqcczP9n5qv7keJzWtket338sa++2+IT2jpKfpoox9KBVQwIIXUSEf0WJV0hgV4EyfK59yixztFidpV4c4Wr6or+N1Phqr1HZaklmiNaCJ/NqLRFEseSlsNCWKqHyo0SgAwZinQ/Qt+47s0Wn6ldE3HPvZzgFvAB771yfspjwRsR3pAaVdq28HLgJc9buvjVRUaKRseyzcOQGvOJYwp9/xvglzmSSmFtimGDiDdKDlVFRCqQyTFdnHHz+qForarfjy631Fn97pjwkeKyv39uLxe1et5P9EaVikMfF9Zrs5+o6DtZNNswmAWRXvwgq402Kj69JlKxEt1NB/VOL2pI6iB6sGoHmtkpTuJ/eMZ/UTuBiq6SfYSFNdN4BYx6AAA'
-            },
-            {
-                id: 'pluto',
-                name: 'Pluto',
-                subtitle: '¡El fiel perrito!',
-                emoji: '🐕',
-                themeColor: '#A3E635',
-                borderActive: 'border-lime-400 bg-lime-50/50',
-                badgeBg: 'bg-lime-600',
-                image: 'data:image/webp;base64,UklGRgwDAABXRUJQVlA4IAADAABwEACdASpBAEgAPtFcp00oJSOiLNTbMQAaCWgAzmhiSQ5wrfXon203O1vAls446A3eXFqAWlFcf2plyyoWf9lFCEVUcwbH6nbJo9D29kT7McCRicspj9GoOMHZQc5E+W9aIHqdP9RXeoeWiSx5OQIwolkdmdJurHKr/IND4OM2X1YWQCVCV9WY/5CsAAD++5QFxhJm5yWW6PF0MTZmCYfwUuk/O4h0YO3df5O6xE5fmv3NbypMbv/QX5x/VPy/vRit+lFt/nkFLrH71cr3r7FPL3hPuPA5M7QEHmdTV29nEnTW2eGetwB24BPWZm58wF0bxwtTKScclEC6mo+IEDXNTt2IAgj2qY7RdFLB+IoKSlp8WCereU3T7Dj0vP/Q5E1fvThnUNnNra0iw1hU7YP6B1FsiM3B2Ir+iroEVjaMzEDQxOd6c+eCzliWI1dabeeGIC3a2s7e9nPNclo6h/3vdWTL/328VPLKZ2Xu59t5GlnYc2DUk8aUzajqGpa0IBHfsk9MGRdK/Hq0Qm3+o+gnqAHczGteLBIP4gNF/PzNvU9IE9i/IvpEx2ZZhBs8pJgCqmQpIdT4L1AbNEPN/RH0+aX6LQChstihDL2Ql+PYx9raFfhwmSqMKnBhuYdf7sNx2dy9sT17q7kNxbBizrBJFNDbX55JPrYvkS9v8WLrFZJ/0D30quw96IO2idrEpCvMG7AE9gH1paGR64DLWML+QgvDp4TgkiX40OPmaiymVczDE2l5LNQ/bSzjGyIws1FpkukXDjBXDTGPe3joI4LeuAHi2mthqVolnSQkybUKyZLsVDr4vBYhjE2iRSvE0Lu0UR3VyLMowTP2bv8UjLtifQcQTAnOKVT5tnZJfVGbfGjuCRPQwQz1KcKMrhaoh8aSLoQNOWjdIoXoo1iW6k+R9Spm6EUBz81dpo6LOF3CurrmsVcp1hXcgjbk4QePtGlk+Jdb0GgvBoAcPYppYaMgLUliyfsL8ZYED7yDP39DvHCESwAbgQgd+/rtG7AjQAA='
-            },
-            {
-                id: 'gato',
-                name: 'Gato (Figaro)',
-                subtitle: '¡Travieso y mimoso!',
-                emoji: '🐱',
-                themeColor: '#94A3B8',
-                borderActive: 'border-slate-400 bg-slate-50',
-                badgeBg: 'bg-slate-600',
-                image: 'data:image/webp;base64,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'
-            },
-            {
-                id: 'perro',
-                name: 'Perro',
-                subtitle: '¡Cachorro alegre!',
-                emoji: '🐶',
-                themeColor: '#D97706',
-                borderActive: 'border-amber-500 bg-amber-50/50',
-                badgeBg: 'bg-amber-600',
-                image: 'data:image/webp;base64,UklGRqACAABXRUJQVlA4IJQCAADQDwCdASoyAEgAPtFYp0yoJSOiKzSc6QAaCWgAy5gNrfhh8EDbF873pyjYWNTDh0M7v2lOrJf1Akr4bP5BVzXtBni9D73BXr63DnlMgoAhsDcGL3Uo/84OvMWfrnqAWmWxqyINVbhuykTfyHs5NfwDgNc6c7hItnjHiQlBC8nZJGKrV+8DLBAA/vtl/tQjxfJW2T4gCTCmnXS10isSsI5XZoJqJg5ZGpATmff28dKysKyn/jfZvY3bx9Mv2StVw5bAwKqJ6viAzsrplgpI8Z9zhsDT6tg4Wijneto6KUgO3zUr6LYvH9NOfq5ghcHK9aEKOWQwwwA6+KToh1ksilimBQRVF5xYbEkUyo1m5Ghq57hONrUDnCIK506VFwLNJJkoSag21Eggpy9QKM+CdH9kblS15kgEIRKmecshHnM7pNfYwVVdDdLCZSOY56lXY8UGljI6KEoTpN1C1CzVk7RMypNY5JED3+K/4stqnpGvtnGioPjOBcQKDxj4BnOykzru7IYuOa8h8Lq2x4pXYQxHqL5zAUuh061qnQ+xWI9qux6xDR7pNg39PlcYmc4nLSIB2++EYkCnau23tuY7DF9/PiWO00aksVY0WcvKvuXnp5/osp6Y5/yquK0eQGp2GNm7WWQvS5n38fGjTDi9gGKIWDmQLlAhfd1fUly1LkF23CWXe/qQC/6BNYQyKGXnWZ7/Ry4ZGqLIG0pdw+vW+sLvpbsA8VYaDXx5KqSccdqrRtz5mgv5RezxvBlWq3GeCXCwM5172NKnV9clgHDBJ4j5ypZuNalM9CghZMZsUtPec4RO3Sini54E9TSB5z/gocji729FTNMGW9XCGD3owuiI9xwK+V5OTaf2bQaugmvrSAAAAAA='
-            },
-            {
-                id: 'clarabella',
-                name: 'Clarabella',
-                subtitle: '¡Amiga divertida!',
-                emoji: '🐄',
-                themeColor: '#10B981',
-                borderActive: 'border-emerald-400 bg-emerald-50/50',
-                badgeBg: 'bg-emerald-500',
-                image: 'data:image/webp;base64,UklGRn4DAABXRUJQVlA4IHIDAABwEACdASojAEgAPsVInUuno6KhtVmcyPAYiWwAx6BDDDFpROvH4AG288wHnRejreLd5PmPn5jhLszojRz44XVSjTfIJocAWJCiDU49qGkA4gR0jXGFv/fU0vQ4O63dwrr+/vwsz5l4QzYGlgLmAU0yPy5PWbX5bTOvVLsaCjAPZXqF/z7rKwR7U+MogAD+/fde2KlV1Keppg9FOE8H4vfZFx69rEGGXzAo2Z4oQEHnIYW8UMsFc5KoC8nnLKEVTQd3q/V0iOlkP1bX/EPvvedaGELuJNfrSbUZfyj77A+Rz7VB6wbAHNJOxxLO+WbIfABEe+mbQBE7QJ8wfAT7USakLVy6ud6/kXShux/wwJVHh1ZJ6/KM3Az+R8d+8Zif+rMaBYOARPnRYUVx+xJonOz2rfTvi1V+3k/n3xSIUxK0BQPq/vPrYI7b/jTTVFl02vwv8wAmW3gXXtNeIGa4b7i+ZHskfzbzqW/avN+J+aRbvULrLNtRoKktS5F7uOSIoaH8XR1YIs16Eci46eZHvLTUXTG4vpVpfLL5tR2qDZNO2nkRugxuW/eVx9E0s0XEqYThDMP4XJ28kIl2T7+NI2gDxXD+A5P9b2Gzl2prc4pth6GcrqbqKO68fCQHwQRCtTRo4ysu0pA79dAquRcHmyuvaCw1om8qxcv+o2vFNB66AIMvdV3uXpTQnLeEW3OWFmlzrqA97GJnbFfM3XFRCk9IgjY7EBqGDkUSgAT3c5RBBxU316lFr5L8VnYTNoKTrVp34/4yfH9pQvl8BcIYxS5omqnsM3sWi9wvnDyGZY7CZYSeFfPALnib6LVLqbTKwHiVEf8a6Q/M9EvBeJinhwcS01Z7COIdHS5ugoYn7PGO8pMC+wmefbLiD1x6nbt+4goZaJOujmiRKt8OSz1+iLJJbvQh/PclrCPWsaDXNoe644CVviATxYgHoAFGLiK192f1bNOkAiZcAAjrVoXEYyC4ey7gFNuqkO8p57c/kl2hjfPa+GK3kEmGJGa82l0GjAw66WhyKk6ZpU9Pq4dH7JWp+zUWeJjt0YyK6IHs/dzecKk56VlMl+JldXyF1vmcXv6edUfWcagkyzw3lARvXYA83mrzEpOhgk41DEn98q9D8f8sjrV9FmR4ronePPzLO84cGXg2Ylinjd4wPGQJneEAAAA='
-            },
-            {
-                id: 'auto',
-                name: 'Auto Rojo',
-                subtitle: '¡Rumbo al paseo!',
-                emoji: '🚗',
-                themeColor: '#F43F5E',
-                borderActive: 'border-rose-400 bg-rose-50/50',
-                badgeBg: 'bg-rose-500',
-                image: 'data:image/webp;base64,UklGRp4DAABXRUJQVlA4IJIDAACwEQCdASpIACwAPtFWpEyoJKOiLvkqAQAaCWgAyEGCvT4Hu260P/Jaa62xcc44eJJPhj3oy6GC/cTcY8ZU0CPV3sErXYzPCP+3nONCUNOeOwsdehZyosRay0rr1eKQ4k1+GopHni8E9+Xr9piZgJoOtUZX+bkSVTwWlMsM89gYiyDGfffoXOcnpEjYbH8LfK80MOCVGAAA/vvYA/0shjS112bRy/cP3taCzPwLJK9N5NWnAffOJi8CvwRXwtNG/2Nw+ZHe6BD9woN/OkOOXSP3UoWoLBb10wzsAWt/jSYn18hjLQstIK52XbYPl/zCsG7D2t2Pg/4HU1Z4lc505F6ZLpRUnXQlh/X4YBv+DnuxS7Qxcp9U/xm5aWL3RaRYXg0TEZyPHl8h5adl3UT3PBXVHpl4UjuDDQj+begcBsuhHT8zpBJrbOi3HN8/cKsxdBoJ2/MFYdLNThy1ekpTCRnro9/J2iMdxLQ596UPCIrS6hCIgLZ++nJ6h8syLGH1ldBvD2ZQrmlMKg4P9wic0nJU2k1dqZlqNOAmSu8OomauULiNBJNe22DERtk1Z7XzL994oGizvOwAUXg2P+unsYj3wagq6gJ5MDg7Q281q7qLz0Is93qPmXxHVr9WRX6seb6W8g+II8T9dmsI8VikS4pYq2maiUoPnhynjDb17enBaA3FOezMY9e9ebECZvR5oYS7Y3pENQdpGqbjTe8sfKyp+6cc0L8EWRg4STi5qjkK8pU8E30D3x3y0Lhe7wt/PtufW91QR/EN9B1y74JJPhd4I7+rg1Ma9AuV7bOmSmxxD1EARH75wc/KDWZc2EDrXxjq0+eXH0f+zniqzY4XAzRZYr+Vq0vVXeWdj59eeu3g0ceGFM/8XLdYm/A5jXzuOv8aJ2+loeCl+hvZzWxjW7E0yF8qEPAOLf1FW8XuPnfP0DgYe74q9N8C1Ln+rdJZg+6+M9GFPJ+dnMY0e25roZ5hdU+RN/p60hpsO3kDG5ytq3YVEKsQd6egiXuQXhsZHOenI60AN+aR6LgrVj1zIBgCb80i9buYKng2pS9OBV3b0p9ilij04O8qSkJPoJKXAtPjXSv5Z1deJ4UJfvstlsUBWdyblT+ffy0nJRiMrXWbCbALUxy95FRw076CPXDeCUqepyfnbGT/Ucg/Vm1gqzNGVUKoQ7UFuZOwYkQJlsQAGvhB6RctQDtXpNiLPUJ3jAAAAA=='
-            },
-            {
-                id: 'dale',
-                name: 'Ardillas',
-                subtitle: '¡Grandes bellotas!',
-                emoji: '🐿️',
-                themeColor: '#D97706',
-                borderActive: 'border-yellow-500 bg-yellow-50/50',
-                badgeBg: 'bg-yellow-600',
-                image: 'data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAACQEwCdASozAEgAPslMoEunpCMhszgN+PAZCWwAz1xayOmHedwI4Iu2352PTkd5zfiZinZhmWKp5oHjr+tfYMTsQav+u3XY6nTQ8wxEZpunpZAOpy5b/5F8RJux+NhVDNrb1grOxxRMS/PQAqeeufAvrKEhAt8XdQL7M9H01XCBVz72Ro6QX18w1E7K6uQbEWnicFL7Qy9S3XpoyqJm5MSo85zqewAA/v0sGTCe9bnnT+a/ceuarOIkzYRJJV0xfp2PanP3y7LUw5GSIFiWTuTJhlJ3Z9Pin/zk0YbLRolXyf3PEIlAYyQufWNl9fcPEyXMYxG3hfOmCRSoc34OeGqgdUwpchpSIx71sV5amml2UeYFy8AbZTSpPvFFu17jKCT2MaMavouROzV3QtWNh/bJK+Ezgilf49D6QvOn8LnKsYfHlV7d5nflfmelEDZBRW6DolN+jDUp2W33ve0A57iHS0rtBo+hDooYwD1v3dZ8IoXXUFmuM3S9oj5zQ2H7qL9jv7N9c9mlmE8bXw8CkWiIqPxoNySMqTXgxuDJ+7/nJweOFC1lOVvIkiQVnEValT5jRvAJKBp/aruD3F+cMBn1ktz7UJ0HE/tdVBq9YNt79Ds3S90HLhy0mtuPpFD7BmbfEnLZGFWIJ3Um3ho/sJF0MapJoc77RbCNOyATll3aCbcnZecVbWJFD9m42+FhJxw9ugDmInNMRbtycmit8psZ/dqJpZZEKL+6bM0DhB+gSNnAiUk0jQB5W10Ujn+dzUiddkH35XHB/7PD7Y4H9RNTy7Pb2epqP8cSp2rioLdCLX1dFo+NZsneZcn+lF51ntEiJheloeYia3YkkYCNGGm67TYm17F4udO3TNnjcc0l2493wytHYUwkhh5DMYcmS5sfFdGZKCNxL4ziz+u6lAZLgOlDNTSdC1KHIMVx1Xepr2UEmfgJy6to2woRP7gypopsp7Bm1be754QbyzMf3OLTi60j7SZbdbbfhpWEHB9Am0XsYm8LX3c9Prk53oEqV7LnR6rFXSgePY8HPsWJVgSj2aOE9Tt/jjQvkHX39klf61oHmUQlPzpbXkxkiIvzQJpcmHjA6Z7V3y6NJYcNaqjCKpv6CIIrw0UmvRW3OeFXGeVbZZdH9sdhhlQJ7NOUwwweCbQPrFN9BBz/199xY4qH5L70hOEO6aPLNfu7jIyQ/Ae2PJHng03tVkdsYtr512GRVP+5V4CUsXq4aE8d/VBCp73oERuzk+JqLjKeUaAUUI3UjpKJ0GGx8eq29wZGRkcEXeERc4RQAe8lV7uVlgh0YbIOvUs7AJY/Io3pvx74ebBwNBfDhAZuRij1HH/P5REiOE68cyiRmw3m2uzsamZ0gpUFprYJC9pQDF8jE9LjHuH8xD49NlfEUAAAAA=='
-            }
+            { id: 'minnie', name: 'Minnie', subtitle: '¡Vestido de lunares!', emoji: '🎀', themeColor: '#F472B6', borderActive: 'border-pink-400 bg-pink-50/50', badgeBg: 'bg-pink-500', image: 'data:image/webp;base64,UklGRlYDAABXRUJQVlA4IEoDAADwDwCdASo9AEgAPtFWoUwoJKMiMBZsAQAaCWQAy4GmdsfdujZFdQbcZZ+l3mpeUyq38GTPYh8xdtXv69y7Nuq7UUMX71OW0Z72/Pp9/6MEh2Ue4g2u1NbgcJ9dp9FwhQ/U2oJn6t5dB42an+LY84/KsJMvXOCQT1PuUYyPzivfI8dHnh0YSAuAAP78d6MclAhQgg3NDcO0h+DwBOoab2SpO6nNaQgxw7/2YqGUY5TN1BMfcDoGr4C09fxBtqewQyVNxL1JcYFG1c/Tz1kvsAZwE+LuCLnsk+jswSP3JNFhYf66XaNXVfKa5gpZDSx8Itjc3HxZn5iP04cJ/AdvNOxDzbHGRg7irT8a/gU4o7KKGB8CXMY2iwgPdvDQ5gzFwsLe6HpHFF/yGnOu6PicnuURpZij3jih2DtvxzWSZL+Iol1urM2IETZpc12Lgm5q44GAapC12Vun8mcBD7eQNQVxHXfYj+YoCus+uX4A87Ts6uR/Ea8wK9AOnG8uu3/5nSd3O6dYd8/SOhT+VF5fzZOfdFcw+WoaWEEGRiJo2D5ScpqZ2ZcRy5C0T4XpzPa/ub9J84pvLZ01OG261FyLATQyZVOe08YEgndjY9t229hhP9R5qXylWQoMDB+xsJrSQZq3HHDkAhRLq9kKzaLxwPOiic+OzHZaCep8xjvyOms8O7h3VxiINGwA6N+ea2MDrdj28dnnkBHLuzQHuoOznQQ25+hicxJeTC+4x78Ee7NLMBds6c6kL+9K+WNskMGlV3A2Z0ZwGrlDxqaiP9phmyCe/Wtpt6/wxtbJQNVVhZJlcdOjf/fFKnILfoFBlQb2KnQqg4kDaAyn4XWNlksT2tMBWpQ90tk2PTt9qbRnz9akFXidv1h6hVA7OQwtccrsWm/g47yM9pYKTzfgy5BcdksU703bqMUQMTJFmF5l/m6CmcH+qg0sxHOzDc6kJsKTYlyrgYDR6KTgy5KtrC8xUsC8/yt3+ywWQE/tkiD2ZLJx43LkrrrO/MGG4Y/1X+4JfpViwC94K/yh0BRwvDj/ed0OUSqaDc4KsmNo7tm3etHsl9WcZabTKIxPoQvbzhL/zuzExt8leVSEgEgC9lgYvKb93UUaaITIP0QAAA==' },
+            { id: 'mickey', name: 'Mickey', subtitle: '¡Líder de la casa!', emoji: '🐭', themeColor: '#FB923C', borderActive: 'border-orange-400 bg-orange-50/50', badgeBg: 'bg-orange-500', image: 'data:image/webp;base64,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' },
+            { id: 'donald', name: 'Donald', subtitle: '¡Gorra marinera!', emoji: '🦆', themeColor: '#38BDF8', borderActive: 'border-sky-400 bg-sky-50/50', badgeBg: 'bg-sky-500', image: 'data:image/webp;base64,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' },
+            { id: 'daisy', name: 'Daisy', subtitle: '¡Lazo morado coqueto!', emoji: '🌼', themeColor: '#C084FC', borderActive: 'border-purple-400 bg-purple-50/50', badgeBg: 'bg-purple-500', image: 'data:image/webp;base64,UklGRiACAABXRUJQVlA4IBQCAACwDACdASo5AEgAPtFcpU2oJSOiKzbbsQAaCWIAzg36qmolYjphzQs9b8O6OhXa9Xg3oQztgO2bZS1y9qwSWLuFUyBOZFr1yspY1yDFdQA1d3omrvJeA7VdGPEdkomI5S7H21yDFD0+Gwj3jqD8AAD++yG1+oa29GvDk2Hc2N13JrUtQ4d2evfy3hM5/f+xYWkWPrjhOPiZgQlNFXFmxiOzofqTwUxkFnNBqOeTn25sYGnzf/ZZZf/xvoEsSeSO/xKvR5tDKc2e5FwMwSmt5eU2ANXR1KSDhzl623ZuJQGWePVEf3g1INbHIjVzbaw9gxO8PmMwjlqcczP9n5qv7keJzWtket338sa++2+IT2jpKfpoox9KBVQwIIXUSEf0WJV0hgV4EyfK59yixztFidpV4c4Wr6or+N1Phqr1HZaklmiNaCJ/NqLRFEseSlsNCWKqHyo0SgAwZinQ/Qt+47s0Wn6ldE3HPvZzgFvAB771yfspjwRsR3pAaVdq28HLgJc9buvjVRUaKRseyzcOQGvOJYwp9/xvglzmSSmFtimGDiDdKDlVFRCqQyTFdnHHz+qForarfjy631Fn97pjwkeKyv39uLxe1et5P9EaVikMfF9Zrs5+o6DtZNNswmAWRXvwgq402Kj69JlKxEt1NB/VOL2pI6iB6sGoHmtkpTuJ/eMZ/UTuBiq6SfYSFNdN4BYx6AAA' },
+            { id: 'pluto', name: 'Pluto', subtitle: '¡El fiel perrito!', emoji: '🐕', themeColor: '#A3E635', borderActive: 'border-lime-400 bg-lime-50/50', badgeBg: 'bg-lime-600', image: 'data:image/webp;base64,UklGRgwDAABXRUJQVlA4IAADAABwEACdASpBAEgAPtFcp00oJSOiLNTbMQAaCWgAzmhiSQ5wrfXon203O1vAls446A3eXFqAWlFcf2plyyoWf9lFCEVUcwbH6nbJo9D29kT7McCRicspj9GoOMHZQc5E+W9aIHqdP9RXeoeWiSx5OQIwolkdmdJurHKr/IND4OM2X1YWQCVCV9WY/5CsAAD++5QFxhJm5yWW6PF0MTZmCYfwUuk/O4h0YO3df5O6xE5fmv3NbypMbv/QX5x/VPy/vRit+lFt/nkFLrH71cr3r7FPL3hPuPA5M7QEHmdTV29nEnTW2eGetwB24BPWZm58wF0bxwtTKScclEC6mo+IEDXNTt2IAgj2qY7RdFLB+IoKSlp8WCereU3T7Dj0vP/Q5E1fvThnUNnNra0iw1hU7YP6B1FsiM3B2Ir+iroEVjaMzEDQxOd6c+eCzliWI1dabeeGIC3a2s7e9nPNclo6h/3vdWTL/328VPLKZ2Xu59t5GlnYc2DUk8aUzajqGpa0IBHfsk9MGRdK/Hq0Qm3+o+gnqAHczGteLBIP4gNF/PzNvU9IE9i/IvpEx2ZZhBs8pJgCqmQpIdT4L1AbNEPN/RH0+aX6LQChstihDL2Ql+PYx9raFfhwmSqMKnBhuYdf7sNx2dy9sT17q7kNxbBizrBJFNDbX55JPrYvkS9v8WLrFZJ/0D30quw96IO2idrEpCvMG7AE9gH1paGR64DLWML+QgvDp4TgkiX40OPmaiymVczDE2l5LNQ/bSzjGyIws1FpkukXDjBXDTGPe3joI4LeuAHi2mthqVolnSQkybUKyZLsVDr4vBYhjE2iRSvE0Lu0UR3VyLMowTP2bv8UjLtifQcQTAnOKVT5tnZJfVGbfGjuCRPQwQz1KcKMrhaoh8aSLoQNOWjdIoXoo1iW6k+R9Spm6EUBz81dpo6LOF3CurrmsVcp1hXcgjbk4QePtGlk+Jdb0GgvBoAcPYppYaMgLUliyfsL8ZYED7yDP39DvHCESwAbgQgd+/rtG7AjQAA=' },
+            { id: 'gato', name: 'Gato (Figaro)', subtitle: '¡Travieso y mimoso!', emoji: '🐱', themeColor: '#94A3B8', borderActive: 'border-slate-400 bg-slate-50', badgeBg: 'bg-slate-600', image: 'data:image/webp;base64,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' },
+            { id: 'perro', name: 'Perro', subtitle: '¡Cachorro alegre!', emoji: '🐶', themeColor: '#D97706', borderActive: 'border-amber-500 bg-amber-50/50', badgeBg: 'bg-amber-600', image: 'data:image/webp;base64,UklGRqACAABXRUJQVlA4IJQCAADQDwCdASoyAEgAPtFYp0yoJSOiKzSc6QAaCWgAy5gNrfhh8EDbF873pyjYWNTDh0M7v2lOrJf1Akr4bP5BVzXtBni9D73BXr63DnlMgoAhsDcGL3Uo/84OvMWfrnqAWmWxqyINVbhuykTfyHs5NfwDgNc6c7hItnjHiQlBC8nZJGKrV+8DLBAA/vtl/tQjxfJW2T4gCTCmnXS10isSsI5XZoJqJg5ZGpATmff28dKysKyn/jfZvY3bx9Mv2StVw5bAwKqJ6viAzsrplgpI8Z9zhsDT6tg4Wijneto6KUgO3zUr6LYvH9NOfq5ghcHK9aEKOWQwwwA6+KToh1ksilimBQRVF5xYbEkUyo1m5Ghq57hONrUDnCIK506VFwLNJJkoSag21Eggpy9QKM+CdH9kblS15kgEIRKmecshHnM7pNfYwVVdDdLCZSOY56lXY8UGljI6KEoTpN1C1CzVk7RMypNY5JED3+K/4stqnpGvtnGioPjOBcQKDxj4BnOykzru7IYuOa8h8Lq2x4pXYQxHqL5zAUuh061qnQ+xWI9qux6xDR7pNg39PlcYmc4nLSIB2++EYkCnau23tuY7DF9/PiWO00aksVY0WcvKvuXnp5/osp6Y5/yquK0eQGp2GNm7WWQvS5n38fGjTDi9gGKIWDmQLlAhfd1fUly1LkF23CWXe/qQC/6BNYQyKGXnWZ7/Ry4ZGqLIG0pdw+vW+sLvpbsA8VYaDXx5KqSccdqrRtz5mgv5RezxvBlWq3GeCXCwM5172NKnV9clgHDBJ4j5ypZuNalM9CghZMZsUtPec4RO3Sini54E9TSB5z/gocji729FTNMGW9XCGD3owuiI9xwK+V5OTaf2bQaugmvrSAAAAAA=' },
+            { id: 'clarabella', name: 'Clarabella', subtitle: '¡Amiga divertida!', emoji: '🐄', themeColor: '#10B981', borderActive: 'border-emerald-400 bg-emerald-50/50', badgeBg: 'bg-emerald-500', image: 'data:image/webp;base64,UklGRn4DAABXRUJQVlA4IHIDAABwEACdASojAEgAPsVInUuno6KhtVmcyPAYiWwAx6BDDDFpROvH4AG288wHnRejreLd5PmPn5jhLszojRz44XVSjTfIJocAWJCiDU49qGkA4gR0jXGFv/fU0vQ4O63dwrr+/vwsz5l4QzYGlgLmAU0yPy5PWbX5bTOvVLsaCjAPZXqF/z7rKwR7U+MogAD+/fde2KlV1Keppg9FOE8H4vfZFx69rEGGXzAo2Z4oQEHnIYW8UMsFc5KoC8nnLKEVTQd3q/V0iOlkP1bX/EPvvedaGELuJNfrSbUZfyj77A+Rz7VB6wbAHNJOxxLO+WbIfABEe+mbQBE7QJ8wfAT7USakLVy6ud6/kXShux/wwJVHh1ZJ6/KM3Az+R8d+8Zif+rMaBYOARPnRYUVx+xJonOz2rfTvi1V+3k/n3xSIUxK0BQPq/vPrYI7b/jTTVFl02vwv8wAmW3gXXtNeIGa4b7i+ZHskfzbzqW/avN+J+aRbvULrLNtRoKktS5F7uOSIoaH8XR1YIs16Eci46eZHvLTUXTG4vpVpfLL5tR2qDZNO2nkRugxuW/eVx9E0s0XEqYThDMP4XJ28kIl2T7+NI2gDxXD+A5P9b2Gzl2prc4pth6GcrqbqKO68fCQHwQRCtTRo4ysu0pA79dAquRcHmyuvaCw1om8qxcv+o2vFNB66AIMvdV3uXpTQnLeEW3OWFmlzrqA97GJnbFfM3XFRCk9IgjY7EBqGDkUSgAT3c5RBBxU316lFr5L8VnYTNoKTrVp34/4yfH9pQvl8BcIYxS5omqnsM3sWi9wvnDyGZY7CZYSeFfPALnib6LVLqbTKwHiVEf8a6Q/M9EvBeJinhwcS01Z7COIdHS5ugoYn7PGO8pMC+wmefbLiD1x6nbt+4goZaJOujmiRKt8OSz1+iLJJbvQh/PclrCPWsaDXNoe644CVviATxYgHoAFGLiK192f1bNOkAiZcAAjrVoXEYyC4ey7gFNuqkO8p57c/kl2hjfPa+GK3kEmGJGa82l0GjAw66WhyKk6ZpU9Pq4dH7JWp+zUWeJjt0YyK6IHs/dzecKk56VlMl+JldXyF1vmcXv6edUfWcagkyzw3lARvXYA83mrzEpOhgk41DEn98q9D8f8sjrV9FmR4ronePPzLO84cGXg2Ylinjd4wPGQJneEAAAA=' },
+            { id: 'auto', name: 'Auto Rojo', subtitle: '¡Rumbo al paseo!', emoji: '🚗', themeColor: '#F43F5E', borderActive: 'border-rose-400 bg-rose-50/50', badgeBg: 'bg-rose-500', image: 'data:image/webp;base64,UklGRp4DAABXRUJQVlA4IJIDAACwEQCdASpIACwAPtFWpEyoJKOiLvkqAQAaCWgAyEGCvT4Hu260P/Jaa62xcc44eJJPhj3oy6GC/cTcY8ZU0CPV3sErXYzPCP+3nONCUNOeOwsdehZyosRay0rr1eKQ4k1+GopHni8E9+Xr9piZgJoOtUZX+bkSVTwWlMsM89gYiyDGfffoXOcnpEjYbH8LfK80MOCVGAAA/vvYA/0shjS112bRy/cP3taCzPwLJK9N5NWnAffOJi8CvwRXwtNG/2Nw+ZHe6BD9woN/OkOOXSP3UoWoLBb10wzsAWt/jSYn18hjLQstIK52XbYPl/zCsG7D2t2Pg/4HU1Z4lc505F6ZLpRUnXQlh/X4YBv+DnuxS7Qxcp9U/xm5aWL3RaRYXg0TEZyPHl8h5adl3UT3PBXVHpl4UjuDDQj+begcBsuhHT8zpBJrbOi3HN8/cKsxdBoJ2/MFYdLNThy1ekpTCRnro9/J2iMdxLQ596UPCIrS6hCIgLZ++nJ6h8syLGH1ldBvD2ZQrmlMKg4P9wic0nJU2k1dqZlqNOAmSu8OomauULiNBJNe22DERtk1Z7XzL994oGizvOwAUXg2P+unsYj3wagq6gJ5MDg7Q281q7qLz0Is93qPmXxHVr9WRX6seb6W8g+II8T9dmsI8VikS4pYq2maiUoPnhynjDb17enBaA3FOezMY9e9ebECZvR5oYS7Y3pENQdpGqbjTe8sfKyp+6cc0L8EWRg4STi5qjkK8pU8E30D3x3y0Lhe7wt/PtufW91QR/EN9B1y74JJPhd4I7+rg1Ma9AuV7bOmSmxxD1EARH75wc/KDWZc2EDrXxjq0+eXH0f+zniqzY4XAzRZYr+Vq0vVXeWdj59eeu3g0ceGFM/8XLdYm/A5jXzuOv8aJ2+loeCl+hvZzWxjW7E0yF8qEPAOLf1FW8XuPnfP0DgYe74q9N8C1Ln+rdJZg+6+M9GFPJ+dnMY0e25roZ5hdU+RN/p60hpsO3kDG5ytq3YVEKsQd6egiXuQXhsZHOenI60AN+aR6LgrVj1zIBgCb80i9buYKng2pS9OBV3b0p9ilij04O8qSkJPoJKXAtPjXSv5Z1deJ4UJfvstlsUBWdyblT+ffy0nJRiMrXWbCbALUxy95FRw076CPXDeCUqepyfnbGT/Ucg/Vm1gqzNGVUKoQ7UFuZOwYkQJlsQAGvhB6RctQDtXpNiLPUJ3jAAAAA==' },
+            { id: 'dale', name: 'Ardillas', subtitle: '¡Grandes bellotas!', emoji: '🐿️', themeColor: '#D97706', borderActive: 'border-yellow-500 bg-yellow-50/50', badgeBg: 'bg-yellow-600', image: 'data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAACQEwCdASozAEgAPslMoEunpCMhszgN+PAZCWwAz1xayOmHedwI4Iu2352PTkd5zfiZinZhmWKp5oHjr+tfYMTsQav+u3XY6nTQ8wxEZpunpZAOpy5b/5F8RJux+NhVDNrb1grOxxRMS/PQAqeeufAvrKEhAt8XdQL7M9H01XCBVz72Ro6QX18w1E7K6uQbEWnicFL7Qy9S3XpoyqJm5MSo85zqewAA/v0sGTCe9bnnT+a/ceuarOIkzYRJJV0xfp2PanP3y7LUw5GSIFiWTuTJhlJ3Z9Pin/zk0YbLRolXyf3PEIlAYyQufWNl9fcPEyXMYxG3hfOmCRSoc34OeGqgdUwpchpSIx71sV5amml2UeYFy8AbZTSpPvFFu17jKCT2MaMavouROzV3QtWNh/bJK+Ezgilf49D6QvOn8LnKsYfHlV7d5nflfmelEDZBRW6DolN+jDUp2W33ve0A57iHS0rtBo+hDooYwD1v3dZ8IoXXUFmuM3S9oj5zQ2H7qL9jv7N9c9mlmE8bXw8CkWiIqPxoNySMqTXgxuDJ+7/nJweOFC1lOVvIkiQVnEValT5jRvAJKBp/aruD3F+cMBn1ktz7UJ0HE/tdVBq9YNt79Ds3S90HLhy0mtuPpFD7BmbfEnLZGFWIJ3Um3ho/sJF0MapJoc77RbCNOyATll3aCbcnZecVbWJFD9m42+FhJxw9ugDmInNMRbtycmit8psZ/dqJpZZEKL+6bM0DhB+gSNnAiUk0jQB5W10Ujn+dzUiddkH35XHB/7PD7Y4H9RNTy7Pb2epqP8cSp2rioLdCLX1dFo+NZsneZcn+lF51ntEiJheloeYia3YkkYCNGGm67TYm17F4udO3TNnjcc0l2493wytHYUwkhh5DMYcmS5sfFdGZKCNxL4ziz+u6lAZLgOlDNTSdC1KHIMVx1Xepr2UEmfgJy6to2woRP7gypopsp7Bm1be754QbyzMf3OLTi60j7SZbdbbfhpWEHB9Am0XsYm8LX3c9Prk53oEqV7LnR6rFXSgePY8HPsWJVgSj2aOE9Tt/jjQvkHX39klf61oHmUQlPzpbXkxkiIvzQJpcmHjA6Z7V3y6NJYcNaqjCKpv6CIIrw0UmvRW3OeFXGeVbZZdH9sdhhlQJ7NOUwwweCbQPrFN9BBz/199xY4qH5L70hOEO6aPLNfu7jIyQ/Ae2PJHng03tVkdsYtr512GRVP+5V4CUsXq4aE8d/VBCp73oERuzk+JqLjKeUaAUUI3UjpKJ0GGx8eq29wZGRkcEXeERc4RQAe8lV7uVlgh0YbIOvUs7AJY/Io3pvx74ebBwNBfDhAZuRij1HH/P5REiOE68cyiRmw3m2uzsamZ0gpUFprYJC9pQDF8jE9LjHuH8xD49NlfEUAAAAA==' }
         ];
 
         const PLAYER_COLORS = ['#38BDF8', '#34D399', '#F472B6', '#FBBF24', '#A78BFA'];
@@ -223,44 +133,36 @@
         const ZONES_PROMPT_LIST = Object.entries(MAP_ZONES).map(([id, z]) => `- "${id}": ${z.name}`).join('\n');
 
         function App() {
-            // Lógica para leer la API key de la URL y guardarla
-            const [apiKey, setApiKey] = useState(() => {
-                const params = new URLSearchParams(window.location.search);
-                const urlKey = params.get('apikey') || params.get('key');
-                if (urlKey) {
-                    localStorage.setItem('gemini_story_key', urlKey.trim());
-                    // Limpia la URL para que no quede la key a la vista en la barra
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    return urlKey.trim();
-                }
-                return localStorage.getItem('gemini_story_key') || '';
-            });
+            // Lógica para tomar la llave de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const keyFromUrl = urlParams.get('key') || urlParams.get('apikey');
 
-            const [isEditingKey, setIsEditingKey] = useState(!apiKey);
+            if (keyFromUrl) {
+                localStorage.setItem('gemini_story_key', keyFromUrl.trim());
+            }
 
-            // NUEVO ESTADO PARA MOSTRAR/OCULTAR EL QR
-            const [showQR, setShowQR] = useState(false);
+            const initialKey = keyFromUrl ? keyFromUrl.trim() : (localStorage.getItem('gemini_story_key') || '');
+            const [apiKey, setApiKey] = useState(initialKey);
+
+            // Si la llave vino por URL, ocultamos los botones de editar permanentemente
+            const [isUrlKey] = useState(!!keyFromUrl);
+            const [isEditingKey, setIsEditingKey] = useState(!initialKey && !isUrlKey);
 
             const [step, setStep] = useState('setup');
             const [mapSourceIndex, setMapSourceIndex] = useState(0);
             const currentMapSrc = MAP_SOURCES[mapSourceIndex];
 
-            const [selectedCharacters, setSelectedCharacters] = useState([
-                CHARACTERS[0], CHARACTERS[1], CHARACTERS[2], CHARACTERS[3]
-            ]);
-
-            const [players, setPlayers] = useState([
-                { id: 1, name: 'Josefina', isStar: true, color: PLAYER_COLORS[0] },
-                { id: 2, name: 'Santiago', isStar: true, color: PLAYER_COLORS[1] },
-                { id: 3, name: 'Paula', isStar: true, color: PLAYER_COLORS[2] },
-                { id: 4, name: 'Amigo', isStar: false, color: PLAYER_COLORS[3] }
-            ]);
+            // Listas vacías al iniciar
+            const [selectedCharacters, setSelectedCharacters] = useState([]);
+            const [players, setPlayers] = useState([]);
 
             const [difficulty, setDifficulty] = useState('facil');
+
             const [storyData, setStoryData] = useState(null);
             const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
             const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
             const [errorMessage, setErrorMessage] = useState('');
+
             const [isListening, setIsListening] = useState(false);
             const [transcript, setTranscript] = useState('');
             const recognitionRef = useRef(null);
@@ -268,7 +170,6 @@
             const handleSaveKey = (val) => {
                 setApiKey(val);
                 localStorage.setItem('gemini_story_key', val.trim());
-                setShowQR(false); // Ocultar QR si cambian la key
             };
 
             const handleImageError = () => {
@@ -371,9 +272,8 @@
             };
 
             const removePlayer = (id) => {
-                if (players.length > 1) {
-                    setPlayers(players.filter(p => p.id !== id));
-                }
+                // Sin restricciones, puedes borrar cualquier jugador
+                setPlayers(players.filter(p => p.id !== id));
             };
 
             const updatePlayerName = (id, newName) => {
@@ -384,7 +284,17 @@
                 const cleanKey = apiKey.trim();
                 if (!cleanKey) {
                     setIsEditingKey(true);
-                    alert("Por favor ingresa tu API Key de Gemini en la barra superior.");
+                    alert("Por favor ingresa tu API Key de Gemini.");
+                    return;
+                }
+
+                if (players.length === 0) {
+                    alert("¡Ups! Debes agregar al menos un jugador a la mesa antes de empezar.");
+                    return;
+                }
+
+                if (selectedCharacters.length === 0) {
+                    alert("¡Faltan amigos! Debes seleccionar al menos un personaje.");
                     return;
                 }
 
@@ -422,7 +332,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
     {
       "type": "dialogue",
       "character": "${selectedCharacters[0]?.name || 'Minnie'}",
-      "player_name": "${players[0]?.name || 'Josefina'}",
+      "player_name": "${players[0]?.name || 'Jugador 1'}",
       "player_color": "${players[0]?.color || '#38BDF8'}",
       "text": "¡Hola a todos! Qué lindo día para explorar el mapa juntos.",
       "locationId": "granja",
@@ -458,16 +368,16 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     console.error("Error al generar historia:", error);
                     setErrorMessage(error.message);
                     if (error.message.includes("API_KEY") || error.message.includes("400") || error.message.includes("403")) {
-                        setIsEditingKey(true);
-                        alert("La Clave de API es inválida o ha expirado. Por favor cámbiala en la barra superior.");
+                        if (!isUrlKey) {
+                            setIsEditingKey(true);
+                            alert("La Clave de API es inválida o ha expirado. Por favor cámbiala en la barra superior.");
+                        } else {
+                            alert("La Clave de API provista a través del Link QR es inválida o ha expirado.");
+                        }
                     }
                     setStep('error');
                 }
             };
-
-            // URL GENERATOR PARA EL QR
-            const shareUrl = window.location.origin + window.location.pathname + '?key=' + encodeURIComponent(apiKey);
-            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(shareUrl)}`;
 
             // Vistas secundarias
             if (step === 'loading') {
@@ -633,9 +543,8 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PANTALLA PRINCIPAL: LANDING EXACTA DE LA REFERENCIA
-            const missingChars = Math.max(0, players.length - selectedCharacters.length);
-            const canStart = selectedCharacters.length >= players.length;
+            // PANTALLA PRINCIPAL: LANDING
+            const canStart = selectedCharacters.length > 0 && players.length > 0 && selectedCharacters.length >= players.length;
 
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col justify-between">
@@ -659,90 +568,63 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         <main className="disney-card p-5 sm:p-8 space-y-7 border border-pink-100/70">
 
                             {/* 0. CLAVE MÁGICA DE INTELIGENCIA */}
-                            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3 sm:p-4 flex flex-col gap-3">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-base">🔑</span>
-                                        <span className="text-xs font-black text-amber-900 tracking-wide uppercase">
-                                            0. Clave Mágica de Inteligencia
+                            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-base">🔑</span>
+                                    <span className="text-xs font-black text-amber-900 tracking-wide uppercase">
+                                        0. Clave Mágica
+                                    </span>
+                                    {apiKey ? (
+                                        <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">
+                                            {isUrlKey ? '🔒 Enlace Seguro' : '🔒 Guardada'}
                                         </span>
-                                        {apiKey ? (
-                                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">
-                                                🔒 Guardada
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">
-                                                ⚠️ Requiere Clave
-                                            </span>
-                                        )}
-                                    </div>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">
+                                            ⚠️ Requiere Clave
+                                        </span>
+                                    )}
+                                </div>
 
-                                    <div className="flex items-center gap-2 justify-between sm:justify-end">
-                                        {isEditingKey ? (
-                                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                                                <input
-                                                    type="password"
-                                                    placeholder="Pega tu clave AIzaSy..."
-                                                    className="bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-mono w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                                                    value={apiKey}
-                                                    onChange={(e) => handleSaveKey(e.target.value)}
-                                                />
-                                                <button
-                                                    onClick={() => setIsEditingKey(false)}
-                                                    className="text-xs font-extrabold text-amber-900 bg-amber-200/80 hover:bg-amber-300 px-3 py-1.5 rounded-xl transition"
-                                                >
-                                                    Listo
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <span className="text-xs font-mono text-slate-400 tracking-widest hidden sm:inline">
-                                                    ••••••••••••••••••••••••••••••••
-                                                </span>
+                                <div className="flex items-center gap-2 justify-between sm:justify-end">
+                                    {isEditingKey && !isUrlKey ? (
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <input
+                                                type="password"
+                                                placeholder="Pega tu clave AIzaSy..."
+                                                className="bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-mono w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                                value={apiKey}
+                                                onChange={(e) => handleSaveKey(e.target.value)}
+                                            />
+                                            <button
+                                                onClick={() => setIsEditingKey(false)}
+                                                className="text-xs font-extrabold text-amber-900 bg-amber-200/80 hover:bg-amber-300 px-3 py-1.5 rounded-xl transition"
+                                            >
+                                                Listo
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="text-xs font-mono text-slate-400 tracking-widest hidden sm:inline">
+                                                ••••••••••••••••••••••••••••••••
+                                            </span>
+                                            {!isUrlKey && (
                                                 <button
                                                     onClick={() => setIsEditingKey(true)}
                                                     className="text-xs font-extrabold text-amber-700 hover:text-amber-900 underline ml-2"
                                                 >
                                                     Cambiar
                                                 </button>
-                                                {apiKey && (
-                                                    <button
-                                                        onClick={() => setShowQR(!showQR)}
-                                                        className="text-xs font-extrabold text-indigo-600 hover:text-indigo-800 underline ml-2 border-l border-amber-300 pl-3"
-                                                    >
-                                                        {showQR ? 'Ocultar QR' : '📱 Compartir a Tablet'}
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
-
-                                {/* CAJA DEL CÓDIGO QR */}
-                                {showQR && apiKey && !isEditingKey && (
-                                    <div className="mt-2 p-4 bg-white rounded-xl border border-indigo-100 flex flex-col items-center w-full shadow-sm animate-fade-in">
-                                        <p className="text-xs font-bold text-slate-600 mb-3 text-center">
-                                            Escanea este código con tu tablet o celular para abrir la app allí con la clave ya cargada 🚀
-                                        </p>
-                                        <img
-                                            src={qrImageUrl}
-                                            alt="QR para cargar API Key"
-                                            className="w-48 h-48 border-4 border-white shadow rounded-lg"
-                                        />
-                                        <div className="mt-3 bg-slate-50 px-3 py-2 rounded border border-slate-100 w-full overflow-hidden text-center">
-                                            <p className="text-[10px] font-mono text-slate-400 truncate select-all">
-                                                {window.location.origin + window.location.pathname}?key=••••••••
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* 1. ELIGE LOS PERSONAJES FÍSICOS (EN LA MESA) */}
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <h3 className="text-sm font-black text-slate-800 tracking-wide uppercase">
-                                        1. Elige los Personajes Físicos (en la mesa)
+                                        1. Elige los Personajes Físicos
                                     </h3>
                                     <span className="bg-pink-100 text-pink-700 border border-pink-200 text-xs font-black px-3 py-0.5 rounded-full">
                                         🌸 {selectedCharacters.length} Seleccionados
@@ -826,14 +708,12 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                                 className="w-5 h-5 rounded-full shadow-inner mr-3 border border-white"
                                                 style={{ backgroundColor: p.color }}
                                             ></div>
-                                            {players.length > 1 && (
-                                                <button
-                                                    onClick={() => removePlayer(p.id)}
-                                                    className="text-slate-300 hover:text-rose-500 font-extrabold text-sm px-1.5"
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => removePlayer(p.id)}
+                                                className="text-slate-300 hover:text-rose-500 font-extrabold text-sm px-1.5"
+                                            >
+                                                ✕
+                                            </button>
                                         </div>
                                     ))}
                                 </div>

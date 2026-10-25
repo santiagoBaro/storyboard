@@ -194,7 +194,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import { CHARACTERS, PLAYER_COLORS, } from './personajes.js';
+        import { CHARACTERS, PLAYER_COLORS } from './personajes.js';
         import { NPCS } from './npc.js';
         import { MAP_IMAGE, MAP_ZONES } from './fondos.js';
         import { dialogAudio } from './dialogAudio.js';
@@ -203,7 +203,7 @@
 
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // Lista combinada de personajes y NPCs disponible para toda la app
+        // Lista unificada de personajes jugables y villanos/NPCs
         const allAvailableEntities = [...CHARACTERS, ...NPCS];
 
         function App() {
@@ -227,9 +227,9 @@
             const [chapterCount, setChapterCount] = useState(1);
             const [errorMessage, setErrorMessage] = useState('');
 
-            // Imágenes de eventos generadas con Gemini Nano Banana
+            // Almacén de imágenes y videos generados bajo demanda
             const [eventImages, setEventImages] = useState({});
-            const [imageGenProgress, setImageGenProgress] = useState({ current: 0, total: 0, isGenerating: false });
+            const [eventVideos, setEventVideos] = useState({});
 
             // Video final con Gemini Omni Flash
             const [videoFinalUrl, setVideoFinalUrl] = useState('');
@@ -272,46 +272,47 @@
             }, [storyData, selectedCharacters]);
 
             /**
-             * GENERACIÓN SECUENCIAL EN ESTRICTO ORDEN CRONOLÓGICO:
-             * Ordena los eventos de la historia desde la primera viñeta hasta la última,
-             * y genera las imágenes con Gemini Nano Banana 2.1 una por una.
+             * GENERACIÓN BAJO DEMANDA (LAZY LOADING):
+             * Precarga la viñeta actual y la siguiente en segundo plano sin demorar el inicio.
              */
-            const generateEventImagesChronologically = async (panelList) => {
-                const eventPanels = panelList
-                    .map((p, index) => ({ ...p, originalIndex: index }))
-                    .filter(p => p.type === 'event')
-                    .sort((a, b) => a.originalIndex - b.originalIndex); // Orden cronológico garantizado
+            useEffect(() => {
+                if (step !== 'story' || !panels.length || !apiKey) return;
 
-                if (eventPanels.length === 0) {
-                    setImageGenProgress({ current: 0, total: 0, isGenerating: false });
-                    return;
-                }
+                const upcomingIndices = [activePanelIndex, activePanelIndex + 1].filter(idx => idx < panels.length);
 
-                setImageGenProgress({ current: 0, total: eventPanels.length, isGenerating: true });
+                upcomingIndices.forEach(async (idx) => {
+                    const p = panels[idx];
+                    if (!p) return;
 
-                for (let i = 0; i < eventPanels.length; i++) {
-                    const p = eventPanels[i];
-                    const realIndex = p.originalIndex;
-                    const zone = MAP_ZONES[p.locationId] || MAP_ZONES['minnie_living'];
-                    const prompt = `Disney Pixar 3D animated comic style, chronological scene event #${i + 1}. Location: ${zone.name}. Characters: ${p.character}. Event: ${p.text}. Cheerful, vivid magical lighting, cinematic high quality cartoon render, no text on image.`;
+                    const isImg = p.type === 'image_event' || p.type === 'event';
+                    const isVid = p.type === 'video_event';
 
-                    try {
-                        console.log(`[Cronológico] Generando imagen para Evento en viñeta #${realIndex + 1} (${i + 1}/${eventPanels.length})...`);
-                        const imgUri = await generateEventImage(prompt, apiKey);
-                        if (imgUri) {
-                            setEventImages(prev => ({ ...prev, [realIndex]: imgUri }));
-                            console.log(`[Cronológico] ✓ Evento #${realIndex + 1} listo.`);
+                    if (isImg && !eventImages[idx]) {
+                        setEventImages(prev => ({ ...prev, [idx]: 'loading' }));
+                        const zone = MAP_ZONES[p.locationId] || MAP_ZONES['minnie_living'];
+                        const prompt = p.event_description || `Disney Pixar 3D animated comic style scene. Location: ${zone.name}. Characters: ${p.character}. Event: ${p.text}. Cheerful, vivid magical lighting, cinematic high quality cartoon render, no text on image.`;
+
+                        try {
+                            const imgUri = await generateEventImage(prompt, apiKey);
+                            setEventImages(prev => ({ ...prev, [idx]: imgUri || null }));
+                        } catch (err) {
+                            console.warn(`Error generando imagen de viñeta #${idx + 1}:`, err);
+                            setEventImages(prev => ({ ...prev, [idx]: null }));
                         }
-                    } catch (e) {
-                        console.warn(`[Cronológico] No se pudo generar viñeta #${realIndex + 1}, se usará fondo ilustrado:`, e);
+                    } else if (isVid && !eventVideos[idx]) {
+                        setEventVideos(prev => ({ ...prev, [idx]: 'loading' }));
+                        const prompt = p.event_description || `Disney Pixar 3D animated scene. Action: ${p.text}. Cheerful cartoon style.`;
+
+                        try {
+                            const vidUri = await generateEventVideo(prompt, apiKey);
+                            setEventVideos(prev => ({ ...prev, [idx]: vidUri || null }));
+                        } catch (err) {
+                            console.warn(`Error generando video de viñeta #${idx + 1}:`, err);
+                            setEventVideos(prev => ({ ...prev, [idx]: null }));
+                        }
                     }
-
-                    setImageGenProgress({ current: i + 1, total: eventPanels.length, isGenerating: i + 1 < eventPanels.length });
-
-                    // Pausa entre peticiones para respetar la tasa de la API
-                    await new Promise(r => setTimeout(r, 350));
-                }
-            };
+                });
+            }, [step, activePanelIndex, panels, apiKey]);
 
             // Control por voz
             const handleVoiceInput = useCallback((spoken) => {
@@ -335,8 +336,10 @@
                         let textToRead = currentPanel.text;
                         if (currentPanel.type === 'action') {
                             textToRead = `¡Atención ${currentPanel.player_name}! Desafío: ${currentPanel.text}`;
-                        } else if (currentPanel.type === 'event') {
-                            textToRead = `¡Atención todos! Suceso extraordinario: ${currentPanel.text}`;
+                        } else if (currentPanel.type === 'image_event' || currentPanel.type === 'event') {
+                            textToRead = `¡Atención todos! Pista mágica: ${currentPanel.text}`;
+                        } else if (currentPanel.type === 'video_event') {
+                            textToRead = `¡Momento de acción! ${currentPanel.text}`;
                         }
                         dialogAudio.speak(textToRead, currentPanel.character, apiKey);
                     }
@@ -352,7 +355,7 @@
                 }
             };
 
-            // Iniciar historia: pasa al mapa inmediatamente e inicia la cola cronológica de imágenes
+            // Iniciar historia: pasa al tablero inmediatamente
             const handleStartStory = async () => {
                 setStep('loading_story');
                 setErrorMessage('');
@@ -363,12 +366,10 @@
                     setActivePanelIndex(0);
                     setChapterCount(1);
                     setEventImages({});
+                    setEventVideos({});
 
                     // Entra directo al tablero sin demoras
                     setStep('positioning');
-
-                    // Genera las imágenes en estricto orden cronológico en segundo plano
-                    generateEventImagesChronologically(data.panels || data.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage(err.message || 'Error al conectar con Gemini.');
@@ -376,12 +377,11 @@
                 }
             };
 
-            // Manejar elección final: seguir la historia o generar video final
+            // Manejar elección final
             const handleSelectChoice = async (choice) => {
                 dialogAudio.stop();
 
                 if (choice.type === 'finish' || choice.id === '3') {
-                    // Genera el video con Gemini Omni 1.1 Flash
                     setStep('generating_video');
                     const videoPrompt = `Disney Pixar 3D animated celebration video, Mickey Mouse Clubhouse friends celebrating: ${storyData?.moral || 'jugar en equipo'}. Confetti, colorful lighting, joyful cartoon finish.`;
 
@@ -406,7 +406,6 @@
                     return;
                 }
 
-                // Continúa cronológicamente el cómic
                 setStep('loading_story');
                 try {
                     const summary = panels.map(p => `[${p.type}] ${p.character}: ${p.text}`).join(' ');
@@ -428,9 +427,9 @@
                     setActivePanelIndex(0);
                     setChapterCount(c => c + 1);
                     setEventImages({});
+                    setEventVideos({});
 
                     setStep('story');
-                    generateEventImagesChronologically(nextData.panels || nextData.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage('No pudimos continuar el cómic.');
@@ -472,8 +471,8 @@
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="text-7xl mb-4 animate-bounce">📚</div>
-                        <h2 className="text-3xl font-black text-slate-800">Escribiendo la historia con Gemini 3.1...</h2>
-                        <p className="text-pink-500 font-bold mt-2">Ordenando las viñetas en secuencia cronológica.</p>
+                        <h2 className="text-3xl font-black text-slate-800">Escribiendo la historia con Gemini 3.8 Flash...</h2>
+                        <p className="text-pink-500 font-bold mt-2">Creando las viñetas con causa y efecto.</p>
                     </div>
                 );
             }
@@ -483,7 +482,7 @@
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
                         <div className="w-16 h-16 border-4 border-slate-900 border-t-pink-500 rounded-full animate-spin mb-6 mx-auto" />
                         <h2 className="text-3xl font-black text-slate-800 mb-2">Creando el Video Final con IA...</h2>
-                        <p className="text-pink-500 font-bold">Generando video de celebración con Gemini Omni 1.1 Flash 🎬</p>
+                        <p className="text-pink-500 font-bold">Generando video de celebración 🎬</p>
                     </div>
                 );
             }
@@ -503,7 +502,7 @@
                                     <img src={videoFinalUrl} alt="Escena Final" className="video-scene-image" />
                                 )}
                                 <div className="absolute top-3 left-3 bg-red-600 border border-white px-3 py-0.5 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow">
-                                    {isVideoOutput ? 'Video IA (Omni Flash)' : 'Ilustración Final'}
+                                    {isVideoOutput ? 'Video IA' : 'Ilustración Final'}
                                 </div>
                             </div>
 
@@ -543,21 +542,11 @@
             /* PREPARACIÓN DEL TABLERO */
             if (step === 'positioning' && storyData) {
                 const pos = initialPositions[currentPositionIndex] || initialPositions[0];
-                const charObj = CHARACTERS.find(c => c.name.toLowerCase() === (pos?.character || '').toLowerCase()) || { name: pos?.character || 'Personaje', image: '', emoji: '🧸' };
+                const charObj = allAvailableEntities.find(c => c.name.toLowerCase() === (pos?.character || '').toLowerCase()) || { name: pos?.character || 'Personaje', image: '', emoji: '🧸' };
                 const zone = MAP_ZONES[pos?.locationId] || { x: '50%', y: '50%', scale: 2.0, name: pos?.description || 'El Club', detail: '' };
 
                 return (
                     <div className="min-h-screen flex flex-col items-center p-4 max-w-xl mx-auto justify-center relative">
-                        {/* Indicador de progreso cronológico */}
-                        {imageGenProgress.isGenerating && (
-                            <div className="fixed top-4 right-4 bg-white/95 backdrop-blur-md border-2 border-slate-900 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-[4px_4px_0px_#0f172a] z-50">
-                                <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-pink-500 rounded-full animate-spin" />
-                                <span className="text-xs font-black text-slate-800">
-                                    Pintando eventos en orden cronológico ({imageGenProgress.current}/{imageGenProgress.total})
-                                </span>
-                            </div>
-                        )}
-
                         <div className="bg-yellow-300 border-2 border-slate-900 px-6 py-1.5 rounded-full font-black text-xs uppercase tracking-wider mb-3 shadow-[3px_3px_0px_#0f172a]">
                             🗺️ Preparando el tablero ({currentPositionIndex + 1} de {initialPositions.length})
                         </div>
@@ -614,11 +603,24 @@
                 const activePanel = panels[activePanelIndex] || panels[0];
                 const isLastPanel = activePanelIndex === panels.length - 1;
                 const activeZone = MAP_ZONES[activePanel.locationId] || MAP_ZONES['minnie_living'];
-                const activeChar = CHARACTERS.find(c => c.name.toLowerCase() === (activePanel.character || '').toLowerCase());
 
-                const isEvent = activePanel.type === 'event';
+                // Busca en personajes y también en NPCs (villanos)
+                const activeChar = allAvailableEntities.find(c =>
+                    c.name.toLowerCase() === (activePanel.character || '').toLowerCase() ||
+                    c.id.toLowerCase() === (activePanel.character || '').toLowerCase()
+                );
+
+                const isEvent = activePanel.type === 'image_event' || activePanel.type === 'event';
+                const isVideo = activePanel.type === 'video_event';
                 const isAction = activePanel.type === 'action';
-                const activePanelAiEventImg = isEvent ? eventImages[activePanelIndex] : null;
+
+                const currentImgState = eventImages[activePanelIndex];
+                const activePanelAiEventImg = (isEvent && currentImgState && currentImgState !== 'loading') ? currentImgState : null;
+                const isImageLoading = isEvent && currentImgState === 'loading';
+
+                const currentVidState = eventVideos[activePanelIndex];
+                const activePanelAiVideo = (isVideo && currentVidState && currentVidState !== 'loading') ? currentVidState : null;
+                const isVideoLoading = isVideo && currentVidState === 'loading';
 
                 return (
                     <div className="min-h-screen flex flex-col p-3 sm:p-5 max-w-4xl mx-auto justify-between select-none relative">
@@ -626,7 +628,7 @@
                         <header className="flex justify-between items-center mb-3 gap-2">
                             <div className="bg-yellow-300 border-3 border-slate-900 px-4 py-2 rounded-2xl font-black text-xs sm:text-sm text-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center gap-2">
                                 <span className="font-comic text-base">CÓMIC #{chapterCount}</span>
-                                <span className="truncate max-w-[200px] sm:max-w-none">• Viñeta {activePanelIndex + 1} de {panels.length}</span>
+                                <span className="truncate max-w-[200px] sm:max-w-none">Viñeta {activePanelIndex + 1} de {panels.length}</span>
                             </div>
 
                             <div className="flex items-center space-x-2">
@@ -654,13 +656,19 @@
                         </header>
 
                         {/* Escenario de la Viñeta Activa */}
-                        <div className={`relative rounded-[2rem] overflow-hidden border-4 shadow-[8px_8px_0px_#0f172a] min-h-[380px] sm:min-h-[440px] flex flex-col justify-between p-4 sm:p-6 mb-4 ${isEvent ? 'border-amber-500 bg-amber-950' : (isAction ? 'border-yellow-500 bg-yellow-950' : 'border-slate-900 bg-slate-900')}`}>
+                        <div className={`relative rounded-[2rem] overflow-hidden border-4 shadow-[8px_8px_0px_#0f172a] min-h-[380px] sm:min-h-[440px] flex flex-col justify-between p-4 sm:p-6 mb-4 ${isEvent ? 'border-amber-500 bg-amber-950' : (isVideo ? 'border-purple-600 bg-purple-950' : (isAction ? 'border-yellow-500 bg-yellow-950' : 'border-slate-900 bg-slate-900'))}`}>
 
-                            <img
-                                src={activePanelAiEventImg || activeZone.sceneImage || MAP_IMAGE}
-                                alt={activeZone.name}
-                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${activePanelAiEventImg ? 'brightness-95 contrast-[1.02]' : 'filter brightness-[0.80] contrast-[1.05]'}`}
-                            />
+                            {/* Fondo: Video, Ilustración generada o Escenario por defecto */}
+                            {isVideo && activePanelAiVideo ? (
+                                <video src={activePanelAiVideo} autoPlay loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                                <img
+                                    src={activePanelAiEventImg || activeZone.sceneImage || MAP_IMAGE}
+                                    alt={activeZone.name}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${activePanelAiEventImg ? 'brightness-95 contrast-[1.02]' : 'filter brightness-[0.80] contrast-[1.05]'}`}
+                                />
+                            )}
+
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/30 pointer-events-none" />
 
                             {/* Badges superiores */}
@@ -675,8 +683,15 @@
 
                                     {isEvent && (
                                         <span className="bg-amber-400 border-2 border-slate-900 text-slate-900 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#0f172a] uppercase flex items-center gap-1">
-                                            <span>✨</span>
-                                            <span>{activePanelAiEventImg ? 'ILUSTRACIÓN IA' : 'EVENTO EXTRAORDINARIO'}</span>
+                                            <span>🔍</span>
+                                            <span>{isImageLoading ? 'DESCUBRIENDO PISTA...' : (activePanelAiEventImg ? 'PISTA MÁGICA IA' : 'EVENTO / PISTA')}</span>
+                                        </span>
+                                    )}
+
+                                    {isVideo && (
+                                        <span className="bg-purple-400 border-2 border-slate-900 text-slate-900 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#0f172a] uppercase flex items-center gap-1">
+                                            <span>🎬</span>
+                                            <span>{isVideoLoading ? 'ANIMANDO ACCIÓN...' : 'ACCIÓN EN VIVO'}</span>
                                         </span>
                                     )}
 
@@ -701,21 +716,31 @@
 
                             {/* Centro de la viñeta */}
                             <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-                                {isAction ? (
+                                {isImageLoading ? (
+                                    <div className="flex flex-col items-center bg-white/90 border-2 border-slate-900 px-5 py-3 rounded-2xl shadow-xl">
+                                        <div className="w-10 h-10 border-4 border-slate-900 border-t-pink-500 rounded-full animate-spin mb-2" />
+                                        <span className="text-xs font-black text-slate-900">Pintando la pista mágica... ✨</span>
+                                    </div>
+                                ) : isVideoLoading ? (
+                                    <div className="flex flex-col items-center bg-white/90 border-2 border-slate-900 px-5 py-3 rounded-2xl shadow-xl">
+                                        <div className="w-10 h-10 border-4 border-slate-900 border-t-purple-500 rounded-full animate-spin mb-2" />
+                                        <span className="text-xs font-black text-slate-900">Preparando animación... 🎬</span>
+                                    </div>
+                                ) : isAction ? (
                                     <div className="flex flex-col items-center">
                                         <div className="text-7xl animate-bounce drop-shadow-[0_12px_20px_rgba(0,0,0,0.8)]">⚡</div>
                                         <span className="bg-yellow-300 border-2 border-slate-900 px-3 py-0.5 rounded-xl font-black text-xs text-slate-900 mt-1 shadow-[2px_2px_0px_#0f172a]">
                                             ¡Mueve tu muñeco!
                                         </span>
                                     </div>
-                                ) : isEvent && !activePanelAiEventImg ? (
+                                ) : (isEvent && !activePanelAiEventImg) ? (
                                     <div className="flex flex-col items-center">
                                         <div className="text-7xl animate-pulse drop-shadow-[0_12px_20px_rgba(0,0,0,0.8)]">🌟</div>
                                         <span className="bg-amber-300 border-2 border-slate-900 px-3 py-0.5 rounded-xl font-black text-xs text-slate-900 mt-1 shadow-[2px_2px_0px_#0f172a]">
-                                            ¡Suceso Mágico!
+                                            ¡Pista Revelada!
                                         </span>
                                     </div>
-                                ) : !isEvent && activeChar ? (
+                                ) : activeChar ? (
                                     <div className="flex flex-col items-center animate-float">
                                         <img
                                             src={activeChar.image}
@@ -741,8 +766,10 @@
                                         : (isAction
                                             ? '⚡ Realiza el movimiento en el tablero para avanzar'
                                             : isEvent
-                                                ? '🌟 Supera el obstáculo con tu equipo'
-                                                : '🎙️ Lee en voz alta para pasar de viñeta')}
+                                                ? '🌟 Descubre la pista con tu equipo'
+                                                : isVideo
+                                                    ? '🎬 ¡Mira lo que pasó!'
+                                                    : '🎙️ Lee en voz alta para pasar de viñeta')}
                                 </div>
 
                                 {transcript && difficulty !== 'narrada' && (
@@ -759,12 +786,17 @@
                                 <span className="text-xs font-black uppercase text-slate-500">Tira de viñetas ({panels.length} totales):</span>
                                 <span className="text-xs font-bold text-slate-400">Toca cualquiera para revisarla</span>
                             </div>
-                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 max-h-36 overflow-y-auto p-1">
                                 {panels.map((p, idx) => {
                                     const isCur = idx === activePanelIndex;
                                     const zone = MAP_ZONES[p.locationId] || MAP_ZONES['minnie_living'];
-                                    const thumb = (p.type === 'event' && eventImages[idx]) ? eventImages[idx] : (zone.sceneImage || MAP_IMAGE);
-                                    const typeIcon = p.type === 'event' ? '🌟' : (p.type === 'action' ? '⚡' : '💬');
+                                    const isEv = p.type === 'image_event' || p.type === 'event';
+                                    const isVid = p.type === 'video_event';
+                                    const thumb = (isEv && eventImages[idx] && eventImages[idx] !== 'loading')
+                                        ? eventImages[idx]
+                                        : (zone.sceneImage || MAP_IMAGE);
+
+                                    const typeIcon = isEv ? '🔍' : (isVid ? '🎬' : (p.type === 'action' ? '⚡' : '💬'));
 
                                     return (
                                         <button
@@ -788,7 +820,7 @@
                             </div>
                         </div>
 
-                        {/* Opciones finales para continuar o terminar con Video IA */}
+                        {/* Opciones finales */}
                         {isLastPanel && storyData.choices && storyData.choices.length > 0 && (
                             <div className="bg-amber-50 border-4 border-slate-900 rounded-3xl p-5 shadow-[6px_6px_0px_#0f172a] text-center">
                                 <span className="font-comic text-2xl text-slate-900 block mb-1">¿CÓMO SIGUE ESTA HISTORIA? ✨</span>
@@ -815,7 +847,7 @@
                 );
             }
 
-            /* WIZARD */
+            /* WIZARD DE CONFIGURACIÓN */
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col">
                     <header className="text-center mb-6 pt-2">
@@ -989,7 +1021,7 @@
 
                                 {!allPlayersHaveCharacter && players.length > 0 && (
                                     <p className="text-center text-xs font-bold text-rose-500 mt-3 animate-pulse">
-                                        * Cada jugador debe tener al menos un personaje asignado para continuar.
+                                        Cada jugador debe tener al menos un personaje asignado para continuar.
                                     </p>
                                 )}
                             </div>
@@ -1006,7 +1038,7 @@
                                         { id: 'facil', icon: '🎂', title: '1) Fácil', desc: 'Sonidos y risas', tag: '3 a 4 años' },
                                         { id: 'medio', icon: '🧸', title: '2) Medio', desc: 'Palabras clave', tag: '5 años' },
                                         { id: 'dificil', icon: '🚀', title: '3) Difícil', desc: 'Leer frases largas', tag: '6+ años' },
-                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'Gemini 3.8 Flash-Lite TTS', tag: 'Sin lectura' }
+                                        { id: 'narrada', icon: '🗣️', title: '4) Narrada', desc: 'Gemini TTS', tag: 'Sin lectura' }
                                     ].map(lvl => {
                                         const isSelected = difficulty === lvl.id;
                                         const colSpan = lvl.id === 'narrada' ? 'sm:col-span-3' : 'sm:col-span-1';
@@ -1052,7 +1084,7 @@
 
                     <footer className="text-center py-4 mt-2">
                         <p className="text-[11px] font-bold text-slate-400">
-                            🌸 Cómic infantil interactivo potenciado con Gemini 3.1 & 3.8 & Nano Banana
+                            🌸 Cómic infantil interactivo potenciado con Gemini 3.8 Flash
                         </p>
                     </footer>
                 </div>

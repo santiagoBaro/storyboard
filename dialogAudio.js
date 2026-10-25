@@ -1,4 +1,6 @@
-import { CHARACTERS, NPCS } from './personajes.js';
+// ✅ Correcto
+import { CHARACTERS } from './personajes.js';
+import { NPCS } from './npc.js';
 
 class DialogAudioManager {
     constructor() {

@@ -12,7 +12,7 @@ export async function generateStoryPrompt({ players, selectedCharacters, apiKey 
     const charNames = selectedCharacters.map(sc => sc.char.name).join(', ');
 
     const prompt = `
-Crea una historieta / cómic interactivo infantil (4 a 6 años) de hasta 20 viñetas (mínimo 12, máximo 20).
+Crea una historieta / cómic interactivo infantil (4 a 6 años) de entre 12 y 20 viñetas.
 Personajes en juego: ${charNames}.
 Jugadores:
 ${playersPrompt}
@@ -20,13 +20,13 @@ ${playersPrompt}
 UBICACIONES OBLIGATORIAS (Usa SOLO estos IDs):
 ${ZONES_PROMPT_LIST}
 
-REGLAS DE NARRATIVA Y ESTRUCTURA:
+REGLAS DE NARRATIVA Y FORMATO CÓMIC:
 1. DISPERSIÓN INICIAL: Cada personaje DEBE empezar en una ubicación DISTINTA del mapa. El inicio de la aventura consiste en desplazarse para buscarse, encontrarse y reunirse.
-2. TIPOS DE VIÑETA OBLIGATORIOS (Intercala dinámicamente estos 3 tipos a lo largo del cómic):
+2. TIPOS DE VIÑETA (Intercala dinámicamente estos 3 tipos a lo largo de las viñetas):
    - "dialogue": Diálogo entre personajes. El niño lee o escucha el globo de cómic.
-   - "event": Suceso extraordinario o giro inesperado que impulsa la trama (ej: un viento mágico levanta las hojas, aparece una criatura mística, un puente se rompe, se abre un portal luminoso). Plantea un obstáculo a superar y una lección o valor (compartir, empatía, valentía).
-   - "action": Reto físico que el jugador debe realizar con su figura en el tablero/mapa (ej: esquivar proyectiles mágicos, subir a un vehículo/dragón, correr a otra casilla, saltar un río de lava de mentira con su muñeco).
-3. RITMO DE CÓMIC: Cada viñeta debe incluir una onomatopeya sonora ("¡ZAS!", "¡BOOM!", "¡WIII!", "¡PLOP!").
+   - "event": Suceso extraordinario o giro inesperado que impulsa la trama (un viento mágico levanta las hojas, aparece una criatura mística, un puente se rompe, se abre un portal luminoso). Plantea un obstáculo a superar y una lección o valor.
+   - "action": Reto físico que el jugador debe realizar con su figura en el tablero/mapa (esquivar proyectiles mágicos, subir a un vehículo, saltar un río de mentira con su muñeco).
+3. RITMO DE CÓMIC: Cada viñeta debe incluir una onomatopeya sonora corta ("¡ZAS!", "¡BOOM!", "¡WIII!", "¡PLOP!", "¡BRRR!").
 4. FINAL ABIERTO CON ELECCIONES: Al concluir la viñeta final, ofrece EXACTAMENTE 3 opciones:
    - 2 opciones de tipo "continue" para ramificar la historia en una nueva dirección.
    - 1 opción de tipo "finish" para concluir el cuento con un festejo y su moraleja.
@@ -34,7 +34,7 @@ REGLAS DE NARRATIVA Y ESTRUCTURA:
 Devuelve EXCLUSIVAMENTE este JSON válido:
 {
   "title": "Aventura en el Club: ¡El misterio del mapa!",
-  "moral": "Trabajando juntos y escuchando a los demás ningún obstáculo es demasiado grande",
+  "moral": "Trabajando en equipo y ayudándonos superamos cualquier reto",
   "initial_positions": [
     { "character": "${selectedCharacters[0]?.char.name || 'Minnie'}", "locationId": "granja", "description": "cuidando a los animales" }
   ],
@@ -74,7 +74,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
     }
   ],
   "choices": [
-    { "id": "1", "type": "continue", "text": "Seguir la pista del arcoíris hacia la cúpula amarilla" },
+    { "id": "1", "type": "continue", "text": "Seguir la pista mágica hacia la cúpula amarilla" },
     { "id": "2", "type": "continue", "text": "Ir a la playa a rescatar al amigo que quedó atrapado" },
     { "id": "3", "type": "finish", "text": "Terminar la aventura con una fiesta de festejo en el living" }
   ]
@@ -98,7 +98,7 @@ ${ZONES_PROMPT_LIST}
 
 REGLAS:
 1. Genera entre 12 y 20 viñetas combinando equitativamente los 3 tipos:
-   - "dialogue": charlas y réplicas entre personajes.
+   - "dialogue": charlas entre personajes.
    - "event": giros extraordinarios, misterios y superación de problemas.
    - "action": movimientos físicos con los muñecos en el tablero (esquivar, saltar, viajar).
 2. Cada viñeta debe tener su onomatopeya.
@@ -135,5 +135,9 @@ async function executeGeminiRequest(prompt, apiKey) {
     if (!rawText) throw new Error('Respuesta vacía de Gemini.');
 
     const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
+    const parsed = JSON.parse(cleanJson);
+
+    parsed.panels = parsed.panels || parsed.story || [];
+    parsed.initial_positions = parsed.initial_positions || [];
+    return parsed;
 }

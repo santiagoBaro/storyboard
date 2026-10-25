@@ -2,8 +2,8 @@ import { ZONES_PROMPT_LIST, MAP_ZONES } from './fondos.js';
 import { CHARACTERS } from './personajes.js';
 import { NPCS } from './npc.js';
 
-// Modelo recomendado para razonamiento rápido y seguimiento estricto de JSON
-const MODEL_NAME = 'gemini-2.5-flash';
+// Modelo actualizado según la API oficial
+const MODEL_NAME = 'gemini-3.8-flash';
 
 /**
  * Normaliza y valida cada panel/slide generado por Gemini,
@@ -22,7 +22,7 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         text = prefixMatch[2].trim();
     }
 
-    // Detección robusta del tipo de viñeta (no estricta para evitar fallbacks erróneos)
+    // Detección robusta del tipo de viñeta
     let rawType = (panel.type || '').toLowerCase().trim();
     let type = 'dialogue';
 
@@ -279,7 +279,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido:
             { character: selectedCharacters[0]?.char?.name || 'Minnie', locationId: 'granja', description: 'en la granja' }
         ],
         panels: normalizedPanels,
-        story: normalizedPanels, // Garantiza compatibilidad total con index.html
+        story: normalizedPanels,
         choices: fase2Data.choices || [
             { id: "1", type: "continue", text: "Hacer un picnic con nuestro nuevo amigo" },
             { id: "2", type: "continue", text: "Ir a la playa a jugar todos juntos" },
@@ -327,7 +327,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido con claves "title", "moral", "panels" 
 }
 
 /**
- * Comunicación HTTP directa con Gemini 2.5 Flash
+ * Comunicación HTTP directa con Gemini 3.8 Flash
  */
 async function executeGeminiRequest(prompt, apiKey, model = MODEL_NAME) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -340,7 +340,7 @@ async function executeGeminiRequest(prompt, apiKey, model = MODEL_NAME) {
             generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: 0.7,
-                maxOutputTokens: 8192
+                maxOutputTokens: 16384
             }
         })
     });

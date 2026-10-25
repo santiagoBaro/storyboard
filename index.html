@@ -54,7 +54,6 @@
             border-radius: 1.5rem;
             position: relative;
             background-color: #e2e8f0;
-            /* Color de fondo por si no carga la imagen */
             border: 5px solid white;
             box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.08);
             display: flex;
@@ -62,7 +61,6 @@
             justify-content: center;
         }
 
-        /* Texto de respaldo por si la imagen se rompe */
         .map-fallback-text {
             position: absolute;
             color: #94a3b8;
@@ -85,6 +83,36 @@
             user-select: none;
             pointer-events: none;
             z-index: 1;
+        }
+
+        /* Animación Cinemática para el Video final */
+        @keyframes kenburns {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.15);
+            }
+        }
+
+        .video-container {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-radius: 1rem;
+            position: relative;
+            background-color: #000;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 4px solid #1e293b;
+        }
+
+        .video-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: kenburns 12s ease-in-out forwards;
+            opacity: 0.85;
         }
 
         @keyframes pulse-ring {
@@ -116,13 +144,12 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // IMPORTANTE: Hemos codificado el nombre del archivo reemplazando espacios por %20
         const MAP_SOURCES = [
+            'WhatsApp%20Image%202026-10-24%20at%2017.27.00.jpeg',
             'mapa.jpg',
-            'WhatsApp Image 2026-10-24 at 17.27.00.jpeg',
-            'WhatsApp Image 2026-10-24 at 17.27.00_2.jpeg',
-            'WhatsApp Image 2026-10-24 at 17.27.00_3.jpeg',
             'mapa.png',
-            'https://placehold.co/950x600/e2e8f0/94a3b8?text=Tapete+de+Juego' // Fallback seguro final
+            'https://placehold.co/950x600/e2e8f0/94a3b8?text=Tapete+de+Juego'
         ];
 
         const CHARACTERS = [
@@ -132,8 +159,6 @@
             { id: 'daisy', name: 'Daisy', subtitle: '¡Lazo morado coqueto!', emoji: '🌼', image: 'data:image/webp;base64,UklGRiACAABXRUJQVlA4IBQCAACwDACdASo5AEgAPtFcpU2oJSOiKzbbsQAaCWIAzg36qmolYjphzQs9b8O6OhXa9Xg3oQztgO2bZS1y9qwSWLuFUyBOZFr1yspY1yDFdQA1d3omrvJeA7VdGPEdkomI5S7H21yDFD0+Gwj3jqD8AAD++yG1+oa29GvDk2Hc2N13JrUtQ4d2evfy3hM5/f+xYWkWPrjhOPiZgQlNFXFmxiOzofqTwUxkFnNBqOeTn25sYGnzf/ZZZf/xvoEsSeSO/xKvR5tDKc2e5FwMwSmt5eU2ANXR1KSDhzl623ZuJQGWePVEf3g1INbHIjVzbaw9gxO8PmMwjlqcczP9n5qv7keJzWtket338sa++2+IT2jpKfpoox9KBVQwIIXUSEf0WJV0hgV4EyfK59yixztFidpV4c4Wr6or+N1Phqr1HZaklmiNaCJ/NqLRFEseSlsNCWKqHyo0SgAwZinQ/Qt+47s0Wn6ldE3HPvZzgFvAB771yfspjwRsR3pAaVdq28HLgJc9buvjVRUaKRseyzcOQGvOJYwp9/xvglzmSSmFtimGDiDdKDlVFRCqQyTFdnHHz+qForarfjy631Fn97pjwkeKyv39uLxe1et5P9EaVikMfF9Zrs5+o6DtZNNswmAWRXvwgq402Kj69JlKxEt1NB/VOL2pI6iB6sGoHmtkpTuJ/eMZ/UTuBiq6SfYSFNdN4BYx6AAA' },
             { id: 'pluto', name: 'Pluto', subtitle: '¡El fiel perrito!', emoji: '🐕', image: 'data:image/webp;base64,UklGRgwDAABXRUJQVlA4IAADAABwEACdASpBAEgAPtFcp00oJSOiLNTbMQAaCWgAzmhiSQ5wrfXon203O1vAls446A3eXFqAWlFcf2plyyoWf9lFCEVUcwbH6nbJo9D29kT7McCRicspj9GoOMHZQc5E+W9aIHqdP9RXeoeWiSx5OQIwolkdmdJurHKr/IND4OM2X1YWQCVCV9WY/5CsAAD++5QFxhJm5yWW6PF0MTZmCYfwUuk/O4h0YO3df5O6xE5fmv3NbypMbv/QX5x/VPy/vRit+lFt/nkFLrH71cr3r7FPL3hPuPA5M7QEHmdTV29nEnTW2eGetwB24BPWZm58wF0bxwtTKScclEC6mo+IEDXNTt2IAgj2qY7RdFLB+IoKSlp8WCereU3T7Dj0vP/Q5E1fvThnUNnNra0iw1hU7YP6B1FsiM3B2Ir+iroEVjaMzEDQxOd6c+eCzliWI1dabeeGIC3a2s7e9nPNclo6h/3vdWTL/328VPLKZ2Xu59t5GlnYc2DUk8aUzajqGpa0IBHfsk9MGRdK/Hq0Qm3+o+gnqAHczGteLBIP4gNF/PzNvU9IE9i/IvpEx2ZZhBs8pJgCqmQpIdT4L1AbNEPN/RH0+aX6LQChstihDL2Ql+PYx9raFfhwmSqMKnBhuYdf7sNx2dy9sT17q7kNxbBizrBJFNDbX55JPrYvkS9v8WLrFZJ/0D30quw96IO2idrEpCvMG7AE9gH1paGR64DLWML+QgvDp4TgkiX40OPmaiymVczDE2l5LNQ/bSzjGyIws1FpkukXDjBXDTGPe3joI4LeuAHi2mthqVolnSQkybUKyZLsVDr4vBYhjE2iRSvE0Lu0UR3VyLMowTP2bv8UjLtifQcQTAnOKVT5tnZJfVGbfGjuCRPQwQz1KcKMrhaoh8aSLoQNOWjdIoXoo1iW6k+R9Spm6EUBz81dpo6LOF3CurrmsVcp1hXcgjbk4QePtGlk+Jdb0GgvBoAcPYppYaMgLUliyfsL8ZYED7yDP39DvHCESwAbgQgd+/rtG7AjQAA=' },
             { id: 'gato', name: 'Gato (Figaro)', subtitle: '¡Travieso y mimoso!', emoji: '🐱', image: 'data:image/webp;base64,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' },
-            { id: 'perro', name: 'Perro', subtitle: '¡Cachorro alegre!', emoji: '🐶', image: 'data:image/webp;base64,UklGRqACAABXRUJQVlA4IJQCAADQDwCdASoyAEgAPtFYp0yoJSOiKzSc6QAaCWgAy5gNrfhh8EDbF873pyjYWNTDh0M7v2lOrJf1Akr4bP5BVzXtBni9D73BXr63DnlMgoAhsDcGL3Uo/84OvMWfrnqAWmWxqyINVbhuykTfyHs5NfwDgNc6c7hItnjHiQlBC8nZJGKrV+8DLBAA/vtl/tQjxfJW2T4gCTCmnXS10isSsI5XZoJqJg5ZGpATmff28dKysKyn/jfZvY3bx9Mv2StVw5bAwKqJ6viAzsrplgpI8Z9zhsDT6tg4Wijneto6KUgO3zUr6LYvH9NOfq5ghcHK9aEKOWQwwwA6+KToh1ksilimBQRVF5xYbEkUyo1m5Ghq57hONrUDnCIK506VFwLNJJkoSag21Eggpy9QKM+CdH9kblS15kgEIRKmecshHnM7pNfYwVVdDdLCZSOY56lXY8UGljI6KEoTpN1C1CzVk7RMypNY5JED3+K/4stqnpGvtnGioPjOBcQKDxj4BnOykzru7IYuOa8h8Lq2x4pXYQxHqL5zAUuh061qnQ+xWI9qux6xDR7pNg39PlcYmc4nLSIB2++EYkCnau23tuY7DF9/PiWO00aksVY0WcvKvuXnp5/osp6Y5/yquK0eQGp2GNm7WWQvS5n38fGjTDi9gGKIWDmQLlAhfd1fUly1LkF23CWXe/qQC/6BNYQyKGXnWZ7/Ry4ZGqLIG0pdw+vW+sLvpbsA8VYaDXx5KqSccdqrRtz5mgv5RezxvBlWq3GeCXCwM5172NKnV9clgHDBJ4j5ypZuNalM9CghZMZsUtPec4RO3Sini54E9TSB5z/gocji729FTNMGW9XCGD3owuiI9xwK+V5OTaf2bQaugmvrSAAAAAA=' },
-            { id: 'clarabella', name: 'Clarabella', subtitle: '¡Amiga divertida!', emoji: '🐄', image: 'data:image/webp;base64,UklGRn4DAABXRUJQVlA4IHIDAABwEACdASojAEgAPsVInUuno6KhtVmcyPAYiWwAx6BDDDFpROvH4AG288wHnRejreLd5PmPn5jhLszojRz44XVSjTfIJocAWJCiDU49qGkA4gR0jXGFv/fU0vQ4O63dwrr+/vwsz5l4QzYGlgLmAU0yPy5PWbX5bTOvVLsaCjAPZXqF/z7rKwR7U+MogAD+/fde2KlV1Keppg9FOE8H4vfZFx69rEGGXzAo2Z4oQEHnIYW8UMsFc5KoC8nnLKEVTQd3q/V0iOlkP1bX/EPvvedaGELuJNfrSbUZfyj77A+Rz7VB6wbAHNJOxxLO+WbIfABEe+mbQBE7QJ8wfAT7USakLVy6ud6/kXShux/wwJVHh1ZJ6/KM3Az+R8d+8Zif+rMaBYOARPnRYUVx+xJonOz2rfTvi1V+3k/n3xSIUxK0BQPq/vPrYI7b/jTTVFl02vwv8wAmW3gXXtNeIGa4b7i+ZHskfzbzqW/avN+J+aRbvULrLNtRoKktS5F7uOSIoaH8XR1YIs16Eci46eZHvLTUXTG4vpVpfLL5tR2qDZNO2nkRugxuW/eVx9E0s0XEqYThDMP4XJ28kIl2T7+NI2gDxXD+A5P9b2Gzl2prc4pth6GcrqbqKO68fCQHwQRCtTRo4ysu0pA79dAquRcHmyuvaCw1om8qxcv+o2vFNB66AIMvdV3uXpTQnLeEW3OWFmlzrqA97GJnbFfM3XFRCk9IgjY7EBqGDkUSgAT3c5RBBxU316lFr5L8VnYTNoKTrVp34/4yfH9pQvl8BcIYxS5omqnsM3sWi9wvnDyGZY7CZYSeFfPALnib6LVLqbTKwHiVEf8a6Q/M9EvBeJinhwcS01Z7COIdHS5ugoYn7PGO8pMC+wmefbLiD1x6nbt+4goZaJOujmiRKt8OSz1+iLJJbvQh/PclrCPWsaDXNoe644CVviATxYgHoAFGLiK192f1bNOkAiZcAAjrVoXEYyC4ey7gFNuqkO8p57c/kl2hjfPa+GK3kEmGJGa82l0GjAw66WhyKk6ZpU9Pq4dH7JWp+zUWeJjt0YyK6IHs/dzecKk56VlMl+JldXyF1vmcXv6edUfWcagkyzw3lARvXYA83mrzEpOhgk41DEn98q9D8f8sjrV9FmR4ronePPzLO84cGXg2Ylinjd4wPGQJneEAAAA=' },
             { id: 'auto', name: 'Auto Rojo', subtitle: '¡Rumbo al paseo!', emoji: '🚗', image: 'data:image/webp;base64,UklGRp4DAABXRUJQVlA4IJIDAACwEQCdASpIACwAPtFWpEyoJKOiLvkqAQAaCWgAyEGCvT4Hu260P/Jaa62xcc44eJJPhj3oy6GC/cTcY8ZU0CPV3sErXYzPCP+3nONCUNOeOwsdehZyosRay0rr1eKQ4k1+GopHni8E9+Xr9piZgJoOtUZX+bkSVTwWlMsM89gYiyDGfffoXOcnpEjYbH8LfK80MOCVGAAA/vvYA/0shjS112bRy/cP3taCzPwLJK9N5NWnAffOJi8CvwRXwtNG/2Nw+ZHe6BD9woN/OkOOXSP3UoWoLBb10wzsAWt/jSYn18hjLQstIK52XbYPl/zCsG7D2t2Pg/4HU1Z4lc505F6ZLpRUnXQlh/X4YBv+DnuxS7Qxcp9U/xm5aWL3RaRYXg0TEZyPHl8h5adl3UT3PBXVHpl4UjuDDQj+begcBsuhHT8zpBJrbOi3HN8/cKsxdBoJ2/MFYdLNThy1ekpTCRnro9/J2iMdxLQ596UPCIrS6hCIgLZ++nJ6h8syLGH1ldBvD2ZQrmlMKg4P9wic0nJU2k1dqZlqNOAmSu8OomauULiNBJNe22DERtk1Z7XzL994oGizvOwAUXg2P+unsYj3wagq6gJ5MDg7Q281q7qLz0Is93qPmXxHVr9WRX6seb6W8g+II8T9dmsI8VikS4pYq2maiUoPnhynjDb17enBaA3FOezMY9e9ebECZvR5oYS7Y3pENQdpGqbjTe8sfKyp+6cc0L8EWRg4STi5qjkK8pU8E30D3x3y0Lhe7wt/PtufW91QR/EN9B1y74JJPhd4I7+rg1Ma9AuV7bOmSmxxD1EARH75wc/KDWZc2EDrXxjq0+eXH0f+zniqzY4XAzRZYr+Vq0vVXeWdj59eeu3g0ceGFM/8XLdYm/A5jXzuOv8aJ2+loeCl+hvZzWxjW7E0yF8qEPAOLf1FW8XuPnfP0DgYe74q9N8C1Ln+rdJZg+6+M9GFPJ+dnMY0e25roZ5hdU+RN/p60hpsO3kDG5ytq3YVEKsQd6egiXuQXhsZHOenI60AN+aR6LgrVj1zIBgCb80i9buYKng2pS9OBV3b0p9ilij04O8qSkJPoJKXAtPjXSv5Z1deJ4UJfvstlsUBWdyblT+ffy0nJRiMrXWbCbALUxy95FRw076CPXDeCUqepyfnbGT/Ucg/Vm1gqzNGVUKoQ7UFuZOwYkQJlsQAGvhB6RctQDtXpNiLPUJ3jAAAAA==' },
             { id: 'dale', name: 'Ardillas', subtitle: '¡Grandes bellotas!', emoji: '🐿️', image: 'data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAACQEwCdASozAEgAPslMoEunpCMhszgN+PAZCWwAz1xayOmHedwI4Iu2352PTkd5zfiZinZhmWKp5oHjr+tfYMTsQav+u3XY6nTQ8wxEZpunpZAOpy5b/5F8RJux+NhVDNrb1grOxxRMS/PQAqeeufAvrKEhAt8XdQL7M9H01XCBVz72Ro6QX18w1E7K6uQbEWnicFL7Qy9S3XpoyqJm5MSo85zqewAA/v0sGTCe9bnnT+a/ceuarOIkzYRJJV0xfp2PanP3y7LUw5GSIFiWTuTJhlJ3Z9Pin/zk0YbLRolXyf3PEIlAYyQufWNl9fcPEyXMYxG3hfOmCRSoc34OeGqgdUwpchpSIx71sV5amml2UeYFy8AbZTSpPvFFu17jKCT2MaMavouROzV3QtWNh/bJK+Ezgilf49D6QvOn8LnKsYfHlV7d5nflfmelEDZBRW6DolN+jDUp2W33ve0A57iHS0rtBo+hDooYwD1v3dZ8IoXXUFmuM3S9oj5zQ2H7qL9jv7N9c9mlmE8bXw8CkWiIqPxoNySMqTXgxuDJ+7/nJweOFC1lOVvIkiQVnEValT5jRvAJKBp/aruD3F+cMBn1ktz7UJ0HE/tdVBq9YNt79Ds3S90HLhy0mtuPpFD7BmbfEnLZGFWIJ3Um3ho/sJF0MapJoc77RbCNOyATll3aCbcnZecVbWJFD9m42+FhJxw9ugDmInNMRbtycmit8psZ/dqJpZZEKL+6bM0DhB+gSNnAiUk0jQB5W10Ujn+dzUiddkH35XHB/7PD7Y4H9RNTy7Pb2epqP8cSp2rioLdCLX1dFo+NZsneZcn+lF51ntEiJheloeYia3YkkYCNGGm67TYm17F4udO3TNnjcc0l2493wytHYUwkhh5DMYcmS5sfFdGZKCNxL4ziz+u6lAZLgOlDNTSdC1KHIMVx1Xepr2UEmfgJy6to2woRP7gypopsp7Bm1be754QbyzMf3OLTi60j7SZbdbbfhpWEHB9Am0XsYm8LX3c9Prk53oEqV7LnR6rFXSgePY8HPsWJVgSj2aOE9Tt/jjQvkHX39klf61oHmUQlPzpbXkxkiIvzQJpcmHjA6Z7V3y6NJYcNaqjCKpv6CIIrw0UmvRW3OeFXGeVbZZdH9sdhhlQJ7NOUwwweCbQPrFN9BBz/199xY4qH5L70hOEO6aPLNfu7jIyQ/Ae2PJHng03tVkdsYtr512GRVP+5V4CUsXq4aE8d/VBCp73oERuzk+JqLjKeUaAUUI3UjpKJ0GGx8eq29wZGRkcEXeERc4RQAe8lV7uVlgh0YbIOvUs7AJY/Io3pvx74ebBwNBfDhAZuRij1HH/P5REiOE68cyiRmw3m2uzsamZ0gpUFprYJC9pQDF8jE9LjHuH8xD49NlfEUAAAAA==' }
         ];
@@ -156,7 +181,6 @@
         const ZONES_PROMPT_LIST = Object.entries(MAP_ZONES).map(([id, z]) => `- "${id}": ${z.name}`).join('\n');
 
         function App() {
-            // Lógica para tomar la llave
             const urlParams = new URLSearchParams(window.location.search);
             const keyFromUrl = urlParams.get('key') || urlParams.get('apikey');
 
@@ -168,23 +192,19 @@
             const [apiKey, setApiKey] = useState(initialKey);
             const [isUrlKey] = useState(!!keyFromUrl);
 
-            // WIZARD Y FLUJO
             const [wizardStep, setWizardStep] = useState(!initialKey ? 0 : 1);
             const [step, setStep] = useState('setup');
+            const [videoImageUrl, setVideoImageUrl] = useState('');
 
-            // MAPA
             const [mapSourceIndex, setMapSourceIndex] = useState(0);
             const currentMapSrc = MAP_SOURCES[mapSourceIndex];
 
-            // HISTORIAL Y ESTADO DE JUGADORES
             const savedPlayers = JSON.parse(localStorage.getItem('gemini_story_players') || '[]');
             const [players, setPlayers] = useState(savedPlayers);
 
-            // SELECCIÓN DE PERSONAJES ASIGNADOS { playerId: characterId }
             const [activePlayerId, setActivePlayerId] = useState(null);
-            const [selectedCharacters, setSelectedCharacters] = useState([]); // [{char: charObj, playerId: id}]
+            const [selectedCharacters, setSelectedCharacters] = useState([]);
 
-            // DIFICULTAD
             const [difficulty, setDifficulty] = useState('facil');
 
             const [storyData, setStoryData] = useState(null);
@@ -207,7 +227,7 @@
                 }
             };
 
-            // INICIALIZACIÓN RECONOCIMIENTO DE VOZ (MICROFONO)
+            // RECONOCIMIENTO DE VOZ
             useEffect(() => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) return;
@@ -238,7 +258,6 @@
                 recognitionRef.current = recognition;
             }, [step, isListening, storyData, currentStoryIndex, difficulty]);
 
-            // MANEJO DE MICRÓFONO SEGÚN ESTADO Y DIFICULTAD
             useEffect(() => {
                 if (step === 'story' && difficulty !== 'narrada' && recognitionRef.current) {
                     try {
@@ -251,25 +270,24 @@
                 }
             }, [step, currentStoryIndex, difficulty]);
 
-            // GOOGLE CLOUD TEXT TO SPEECH (NARRADA)
+            // GOOGLE CLOUD TEXT-TO-SPEECH
             const playGoogleTTS = async (text, characterName) => {
                 try {
-                    let voiceName = "es-ES-Neural2-A"; // Mujer por defecto
+                    let voiceName = "es-ES-Neural2-A";
                     let pitch = 0;
                     let speakingRate = 1.0;
 
                     const charLower = (characterName || '').toLowerCase();
 
-                    // Magia: asignar voces y tonos según el personaje
                     if (charLower.includes('minnie') || charLower.includes('daisy')) {
                         voiceName = "es-ES-Neural2-A";
-                        pitch = 6.0; // Voz aguda
+                        pitch = 6.0;
                     } else if (charLower.includes('mickey')) {
-                        voiceName = "es-ES-Neural2-B"; // Hombre
+                        voiceName = "es-ES-Neural2-B";
                         pitch = 4.0;
                     } else if (charLower.includes('donald')) {
                         voiceName = "es-ES-Neural2-B";
-                        pitch = -4.0; // Voz grave y peculiar
+                        pitch = -4.0;
                         speakingRate = 1.1;
                     } else if (charLower.includes('perro') || charLower.includes('pluto') || charLower.includes('gato')) {
                         voiceName = "es-ES-Neural2-C";
@@ -288,9 +306,7 @@
                         body: JSON.stringify(requestBody)
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`Google TTS Error: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`Google TTS Error`);
 
                     const data = await response.json();
                     const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
@@ -300,15 +316,13 @@
                     audio.play();
 
                 } catch (error) {
-                    console.warn("Fallo Google TTS (Posiblemente falte habilitar la API en Cloud Console). Usando voz de respaldo...", error);
-                    // Fallback a voz del sistema
+                    console.warn("Fallo Google TTS. Usando voz de respaldo...");
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = 'es-ES';
                     window.speechSynthesis.speak(utterance);
                 }
             };
 
-            // LANZAR AUDIO CUANDO CAMBIA EL TURNO EN MODO "NARRADA"
             useEffect(() => {
                 if (step === 'story' && difficulty === 'narrada' && storyData) {
                     const currentLine = storyData.story[currentStoryIndex];
@@ -330,7 +344,27 @@
                 }
             }, [step, currentStoryIndex, difficulty, storyData]);
 
-            // EVALUAR PROGRESO (VOZ)
+
+            // GENERAR VIDEO AL FINALIZAR
+            const generateEndingVideo = () => {
+                setStep('generating_video');
+                // Traducción automática del prompt para Pollinations AI (que prefiere inglés)
+                const videoPrompt = encodeURIComponent(`Disney Pixar style 3d cartoon, ${storyData.title}, ${storyData.moral}, colorful, happy cute kids and animals, storybook ending, bright magical lighting --width 800 --height 600`);
+                const url = `https://image.pollinations.ai/prompt/${videoPrompt}?nologo=true`;
+
+                const img = new Image();
+                img.src = url;
+                img.onload = () => {
+                    setVideoImageUrl(url);
+                    setStep('video_playing');
+                    playGoogleTTS(`¡Fin del cuento! Recuerden siempre que: ${storyData.moral}`, "Minnie");
+                };
+                img.onerror = () => {
+                    // Si el generador falla, pasamos directo al fin estático
+                    setStep('finished');
+                };
+            };
+
             const evalProgress = (spoken) => {
                 if (!storyData || step !== 'story') return;
                 const currentLine = storyData.story[currentStoryIndex];
@@ -363,27 +397,24 @@
                 if (currentStoryIndex < storyData.story.length - 1) {
                     setCurrentStoryIndex(prev => prev + 1);
                 } else {
-                    setStep('finished');
+                    // En lugar de ir a "finished", generamos el video final
+                    generateEndingVideo();
                 }
             };
 
-            // ASIGNAR PERSONAJE A JUGADOR ACTIVO
             const assignCharacter = (char) => {
                 if (!activePlayerId) return;
 
                 setSelectedCharacters(prev => {
                     const alreadyAssignedToMe = prev.find(sc => sc.char.id === char.id && sc.playerId === activePlayerId);
-
                     if (alreadyAssignedToMe) {
                         return prev.filter(sc => !(sc.char.id === char.id && sc.playerId === activePlayerId));
                     }
-
                     const withoutThisChar = prev.filter(sc => sc.char.id !== char.id);
                     return [...withoutThisChar, { char, playerId: activePlayerId }];
                 });
             };
 
-            // JUGADORES
             const addPlayer = (isStar) => {
                 const color = PLAYER_COLORS[players.length % PLAYER_COLORS.length];
                 setPlayers(prev => [...prev, {
@@ -403,7 +434,6 @@
                 setPlayers(players.map(p => p.id === id ? { ...p, name: newName } : p));
             };
 
-            // GUARDADO DE PASO 1 (JUGADORES)
             const handlePlayersNext = () => {
                 localStorage.setItem('gemini_story_players', JSON.stringify(players));
                 if (players.length > 0 && !activePlayerId) {
@@ -412,7 +442,6 @@
                 setWizardStep(2);
             };
 
-            // API CALL
             const generateStory = async () => {
                 const cleanKey = apiKey.trim();
                 setStep('loading');
@@ -466,10 +495,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         })
                     });
 
-                    if (!response.ok) {
-                        const err = await response.json().catch(() => ({}));
-                        throw new Error(err?.error?.message || `HTTP ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                     const data = await response.json();
                     let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -481,22 +507,14 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     setStep('positioning');
                 } catch (error) {
                     console.error("Error al generar historia:", error);
-                    setErrorMessage(error.message);
-                    if (error.message.includes("API_KEY") || error.message.includes("400") || error.message.includes("403")) {
-                        if (!isUrlKey) {
-                            setWizardStep(0);
-                            alert("La Clave de API es inválida o ha expirado. Por favor cámbiala.");
-                        } else {
-                            alert("La Clave de API provista a través del Link QR es inválida o ha expirado.");
-                        }
-                    }
+                    setErrorMessage("Revisa la Clave API o tu conexión a Internet.");
                     setStep('error');
                 }
             };
 
 
             /* ==============================================================
-             * RENDER SECUNDARIOS DE NAVEGACIÓN
+             * VISTAS SECUNDARIAS
              * ============================================================== */
             if (step === 'loading') {
                 return (
@@ -525,6 +543,44 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
+            // Vista intermedia mientras se crea el video
+            if (step === 'generating_video') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+                        <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-6 mx-auto"></div>
+                        <h2 className="text-3xl font-extrabold text-slate-800">Creando el video final mágico...</h2>
+                        <p className="text-pink-500 font-bold mt-2">¡Pintando la moraleja de la historia!</p>
+                    </div>
+                );
+            }
+
+            // Vista del Reproductor de "Video" (Imagen generada + Ken Burns + TTS final)
+            if (step === 'video_playing') {
+                return (
+                    <div className="min-h-screen flex flex-col p-4 sm:p-6 max-w-xl mx-auto justify-center">
+                        <div className="disney-card p-6 sm:p-8 w-full flex flex-col items-center border border-pink-100 shadow-xl bg-[#0f172a]">
+                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-6 text-center tracking-wide">
+                                ¡Fin de la Aventura!
+                            </h1>
+
+                            <div className="video-container">
+                                <img src={videoImageUrl} alt="Escena Final" className="video-image" />
+                            </div>
+
+                            <div className="bg-white/10 rounded-2xl p-5 mt-6 w-full text-center border border-white/20">
+                                <p className="text-xs font-black text-pink-300 uppercase tracking-widest mb-2">Moraleja Mágica</p>
+                                <p className="text-lg text-white font-bold italic">"{storyData?.moral}"</p>
+                            </div>
+
+                            <button onClick={() => { setStep('setup'); setWizardStep(1); }} className="w-full mt-6 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold py-4 rounded-2xl text-lg shadow-md transition active:scale-95">
+                                Jugar de Nuevo
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Vista de Posicionamiento (Con fallback visual para el mapa)
             if (step === 'positioning' && storyData) {
                 const pos = storyData.initial_positions[currentPositionIndex];
                 const charObj = CHARACTERS.find(c => c.name.toLowerCase() === pos.character.toLowerCase()) || { name: pos.character, image: '', emoji: '🧸' };
@@ -550,8 +606,8 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 
                             {/* MAPA CON FONDO DE RESPALDO */}
                             <div className="map-viewport mb-6">
-                                <div className="map-fallback-text">Mapa</div>
-                                <img src={currentMapSrc} alt="" onError={handleImageError} className="map-stage-image"
+                                <div className="map-fallback-text">Mapa Interactivo</div>
+                                <img src={currentMapSrc} alt="Fondo" onError={handleImageError} className="map-stage-image"
                                     style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }} />
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white shadow-xl flex items-center justify-center z-10">
                                     <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
@@ -607,7 +663,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 {/* MAPA PEQUEÑO CON FONDO DE RESPALDO */}
                                 <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-slate-200 relative flex items-center justify-center">
                                     <span className="absolute text-[10px] font-black text-slate-400">MAPA</span>
-                                    <img src={currentMapSrc} alt="" onError={handleImageError} className="z-10"
+                                    <img src={currentMapSrc} alt="Zona" onError={handleImageError} className="z-10"
                                         style={{ position: 'absolute', left: '50%', top: '50%', width: '320px', maxWidth: 'none', transformOrigin: '0 0', transform: `scale(${zone.scale * 0.7}) translate(-${zone.x}, -${zone.y})` }} />
                                 </div>
                             </div>
@@ -652,6 +708,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
+            // Vista antigua de Fin (ya no se usa por defecto, pero queda como respaldo)
             if (step === 'finished') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
@@ -696,7 +753,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     {/* WIZARD CONTAINER */}
                     <main className="disney-card p-5 sm:p-8 border border-pink-100/70 flex-1">
 
-                        {/* WIZARD PROGRESS BAR */}
                         <div className="flex justify-between items-center mb-8 px-2 max-w-md mx-auto">
                             {[1, 2, 3].map(st => (
                                 <div key={st} className="flex items-center">
@@ -714,10 +770,10 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         {wizardStep === 0 && (
                             <div className="max-w-md mx-auto animate-fadeIn">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-2">Paso 0: Clave Mágica</h3>
-                                <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave para que los personajes puedan hablar.</p>
+                                <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave de Gemini para jugar.</p>
 
                                 <div className="bg-amber-50 text-amber-800 text-[11px] p-3 rounded-xl mb-4 font-bold border border-amber-200">
-                                    🎙️ Nota: Para que el narrador de voz de Google funcione, la API "Cloud Text-to-Speech" debe estar habilitada en la consola de Google Cloud para esta llave.
+                                    🎙️ Nota: Para que funcione la Dificultad Narrada, asegúrate de habilitar la "Cloud Text-to-Speech API" en la consola de Google Cloud de tu llave.
                                 </div>
 
                                 <input
@@ -790,7 +846,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 2: Asignar Personajes</h3>
                                 <p className="text-sm font-medium text-slate-500 text-center mb-6">Toca el nombre del jugador y luego elige su personaje.</p>
 
-                                {/* Selector de Jugador Activo */}
                                 <div className="flex flex-wrap gap-2 justify-center mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                                     {players.map(p => (
                                         <button
@@ -804,7 +859,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                     ))}
                                 </div>
 
-                                {/* Grilla de Personajes */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
                                     {CHARACTERS.map(c => {
                                         const assignedData = selectedCharacters.find(sc => sc.char.id === c.id);

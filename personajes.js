@@ -7,7 +7,7 @@ export const CHARACTERS = [
         subtitle: '¡Vestido de lunares!',
         emoji: '🎀',
         image: './personajes/minnie.png',
-        voice_design: 'Iconic classic female cartoon mouse voice. Very high-pitched feminine falsetto, sweet, gentle and slightly nasal with a playful sing-song cadence. Cheerful, affectionate, melodic, and crisp animation studio quality.'
+        voice_design: 'Exact iconic Minnie Mouse cartoon voice (Russi Taylor style). Pristine, delicate feminine head-voice falsetto with a gentle, melodic upward lilt at sentence endings. Very sweet, breathy, smiling acoustic delivery with a light nasal resonance, playful musical cadence ("Yoo-hoo!"), warm affectionate chuckles, and crystal-clear golden-age animation articulation.'
     },
     {
         id: 'mickey',
@@ -15,7 +15,7 @@ export const CHARACTERS = [
         subtitle: '¡Líder de la casa!',
         emoji: '🐭',
         image: './personajes/mickey.png',
-        voice_design: 'Iconic classic male cartoon mouse voice. Bright, high-pitched male falsetto with a friendly, buoyant cadence and slight vocal breaks on enthusiastic words. Warm, optimistic, clear studio animation tone with joyful energy.'
+        voice_design: 'Exact iconic Mickey Mouse cartoon voice (Wayne Allwine / Bret Iwan style). Signature high-pitched male falsetto with a bright pharyngeal lift and characteristic subtle vocal crack/break on energetic syllables. Warm, bouncy, smiling acoustic resonance, friendly breathy throat chuckles ("Haha, gosh!"), buoyant cadence, and joyful golden-age studio presence.'
     },
     {
         id: 'donald',
@@ -23,7 +23,7 @@ export const CHARACTERS = [
         subtitle: '¡Gorra marinera!',
         emoji: '🦆',
         image: './personajes/donald.png',
-        voice_design: 'Iconic cartoon duck voice with distinctive buccal speech. Highly raspy, squawky, and compressed quacking timbre, fast-paced and semi-garbled yet intelligible, full of explosive, temperamental, and humorous energy.'
+        voice_design: 'Exact iconic Donald Duck voice (Clarence Nash / Tony Anselmo technique). Highly distinctive buccal speech produced by lateral airflow friction inside the cheek pouches. Extremely raspy, compressed, wet duck-squawk timbre with sputtering explosive plosives, rapid temperamental cadence, and feisty quacking undulations while maintaining cartoon dialogue intelligibility.'
     },
     {
         id: 'daisy',
@@ -31,7 +31,7 @@ export const CHARACTERS = [
         subtitle: '¡Lazo morado coqueto!',
         emoji: '🌼',
         image: './personajes/daisy.png',
-        voice_design: 'Charming female cartoon duck voice. Mid-to-high pitch with a smooth nasal duck overtone, melodramatic and sassy cadence, clear articulate diction with theatrical flair, sweet yet delightfully demanding.'
+        voice_design: 'Exact iconic Daisy Duck cartoon voice (Tress MacNeille style). Mid-to-high register with a distinctive forward nasal duck buzz and smooth soft-palate resonance. Theatrical, sassy, and melodramatic delivery with dramatic pitch glides, sharp feminine diction, coy breathy sighs, and charmingly demanding diva cadence.'
     },
     {
         id: 'pluto',
@@ -39,7 +39,7 @@ export const CHARACTERS = [
         subtitle: '¡El fiel perrito!',
         emoji: '🐕',
         image: './personajes/pluto.png',
-        voice_design: 'Playful and goofy cartoon dog vocalization. Breathless, throaty, and deeply expressive with friendly panting inflections, enthusiastic dog-like whines, warm guttural chuckles, and bouncy clumsy energy.'
+        voice_design: 'Exact iconic Pluto vocalizations (Pinto Colvig / Bill Farmer style). Deeply expressive anthropomorphic hound sounds; guttural warm chuckles, breathy rhythmic panting, energetic canine yelps, throaty cartoon whines, goofy rising glissandos ("Yeah-yeah-yeah!"), and clumsy, lovable puppy enthusiasm.'
     },
     {
         id: 'clarabella',
@@ -47,7 +47,7 @@ export const CHARACTERS = [
         subtitle: '¡Alegre y ocurrente!',
         emoji: '🐮',
         image: './personajes/clarabella.png',
-        voice_design: 'Brassy, boisterous female cartoon cow voice. Resonant, operatic alto with wide theatrical vibrato, hearty guffaws, warm country gossip cadence, loud, cheerful, and endearingly eccentric.'
+        voice_design: 'Exact iconic Clarabelle Cow voice (Elvia Allman style). Boisterous, brassy operatic contralto with a wide, dramatic bovine vibrato on sustained vowels. Loud, hearty country gossip cadence, booming chest-resonant belly laughs ("Ah-hyuck-hyuck!"), eccentric theatrical flair, and overflowing neighborly warmth.'
     },
     {
         id: 'gato',
@@ -55,7 +55,7 @@ export const CHARACTERS = [
         subtitle: '¡Travieso y mimoso!',
         emoji: '🐱',
         image: './personajes/gato.png',
-        voice_design: 'Tiny, adorable cartoon kitten voice. Very high-pitched, soft, breathy, and delicate with subtle purring vocal fry and kitten meow-like lilts. Curious, mischievous, gentle, and endearing.'
+        voice_design: 'Exact classic Figaro cartoon kitten voice (Mel Blanc animation style). Microscopic, ultra-high-pitched, delicate feline voice. Whispery breath-rich mews, soft glottal vocal fry reminiscent of tiny purring, inquisitive rising inflections, and mischievous, adorable baby-cat playfulness.'
     },
     {
         id: 'auto',
@@ -63,7 +63,7 @@ export const CHARACTERS = [
         subtitle: '¡Rumbo al paseo!',
         emoji: '🚗',
         image: './personajes/auto_rojo.png',
-        voice_design: 'Animated cartoon anthropomorphic car voice. Chunky, mid-range metallic resonance with subtle engine-rumble vocal undertones and playful horn-like inflections. Friendly, bouncy, fast, and full of revving enthusiasm.'
+        voice_design: 'Classic animated anthropomorphic cartoon car voice (Toontown / Benny the Cab style). Cheerful mid-tenor voice infused with mechanical throat rumbles and idle engine vibrations on pauses ("vroom-vroom"). Energetic brassy horn-like vocal spikes ("Beep-beep!"), bouncy suspension pacing, and revving, road-trip enthusiasm.'
     },
     {
         id: 'dale',
@@ -71,7 +71,7 @@ export const CHARACTERS = [
         subtitle: '¡Grandes bellotas!',
         emoji: '🐿️',
         image: './personajes/ardilla.png',
-        voice_design: 'Hyperactive cartoon chipmunk voice. Extremely high-pitched with an artificial tape speedup effect, rapid-fire staccato delivery, squeaky, bright, and filled with giggles and mischievous, energetic chatter.'
+        voice_design: 'Exact classic Chip and Dale chipmunk voice (Jimmy MacDonald accelerated tape style). Ultra-high-pitched, helium-frequency register with lightning-fast staccato delivery. Squeaky, bright, filled with rapid micro-giggles, acoustic cheek clicks, and hyperactive, mischievous forest chatter.'
     },
     {
         id: 'parro',
@@ -79,6 +79,6 @@ export const CHARACTERS = [
         subtitle: '¡Pajarito curioso!',
         emoji: '🦜',
         image: './personajes/parro.png',
-        voice_design: 'Exuberant tropical cartoon parrot voice. High-mid nasal squawk, sharp beak-clacking vocal texture, rhythmic mimicking cadence, vibrant, perky, and theatrically dramatic with colorful sing-song bursts.'
+        voice_design: 'Exuberant tropical cartoon parrot voice (José Carioca meets Iago style). Piercing upper-mid nasal squawk with sharp beak-clack articulation. Vibrant Latin-tropical cadence, rhythmic sing-song bursts, perky repetitive mimicry, and flamboyant, theatrical showman energy.'
     }
 ];

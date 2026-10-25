@@ -91,38 +91,6 @@
             animation: gentle-bounce 3.5s infinite ease-in-out;
         }
 
-        @keyframes kenburns {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.12) translate(-1%, -1%);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .video-player-container {
-            width: 100%;
-            height: 280px;
-            overflow: hidden;
-            border-radius: 1.25rem;
-            position: relative;
-            background-color: #020617;
-            border: 4px solid #334155;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-
-        .video-scene-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            animation: kenburns 14s infinite alternate ease-in-out;
-        }
-
         @keyframes pulse-ring {
             0% {
                 transform: scale(0.95);
@@ -143,6 +111,28 @@
         .listening-indicator {
             animation: pulse-ring 2s infinite;
         }
+
+        @keyframes blink-cursor {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.1em;
+            background-color: #EC4899;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.8s infinite;
+        }
     </style>
 </head>
 
@@ -152,10 +142,8 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Ruta del mapa base
         const MAP_IMAGE = './mapa.jpeg';
 
-        // Personajes con sus rutas locales y Voice Design en español uruguayo
         const CHARACTERS = [
             {
                 id: 'minnie',
@@ -241,7 +229,6 @@
 
         const PLAYER_COLORS = ['#38BDF8', '#34D399', '#F472B6', '#FBBF24', '#A78BFA'];
 
-        // Asociación de fondos con la estructura de archivos local
         const MAP_ZONES = {
             'granja': {
                 name: 'La Granja',
@@ -289,7 +276,6 @@
                 name: 'Parque de Juegos',
                 detail: 'piso naranja',
                 x: '73.7%', y: '52.8%', scale: 2.8,
-                // Nota: Verifica el nombre exacto de este archivo en tu carpeta fondos
                 background: './fondos/Parque infantil colorido sobre arena de juegos.png'
             },
             'casa_amarilla': {
@@ -327,7 +313,6 @@
             const savedPlayers = JSON.parse(localStorage.getItem('gemini_story_players') || '[]');
             const [players, setPlayers] = useState(savedPlayers);
 
-            // Persistencia de los personajes seleccionados
             const savedSelectedCharacters = JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]');
             const [selectedCharacters, setSelectedCharacters] = useState(savedSelectedCharacters);
 
@@ -342,6 +327,9 @@
             const [currentPositionIndex, setCurrentPositionIndex] = useState(0);
             const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
             const [errorMessage, setErrorMessage] = useState('');
+
+            // Estado para el texto progresivo sincronizado
+            const [displayedText, setDisplayedText] = useState('');
 
             const [isListening, setIsListening] = useState(false);
             const [transcript, setTranscript] = useState('');
@@ -395,8 +383,8 @@
                 }
             }, [step, currentStoryIndex, difficulty]);
 
-            // SÍNTESIS DE VOZ GOOGLE TTS
-            const playGoogleTTS = async (text, characterName) => {
+            // REPRODUCCIÓN Y SINCRONIZACIÓN VOCAL
+            const playGoogleTTS = async (textToSpeak, characterName, fullTextToDisplay) => {
                 try {
                     let pitch = 0;
                     let speakingRate = 1.0;
@@ -420,7 +408,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            input: { text },
+                            input: { text: textToSpeak },
                             voice: { languageCode: "es-UY" },
                             audioConfig: { audioEncoding: "MP3", pitch, speakingRate }
                         })
@@ -432,28 +420,60 @@
                     const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
                     if (window.currentAudio) window.currentAudio.pause();
                     window.currentAudio = audio;
+
+                    // Sincronizar aparición de texto conforme avanza el audio
+                    audio.ontimeupdate = () => {
+                        if (audio.duration && !isNaN(audio.duration)) {
+                            const ratio = Math.min(1, audio.currentTime / audio.duration);
+                            const charsCount = Math.ceil(fullTextToDisplay.length * ratio);
+                            setDisplayedText(fullTextToDisplay.slice(0, charsCount));
+                        }
+                    };
+
+                    audio.onended = () => {
+                        setDisplayedText(fullTextToDisplay);
+                    };
+
                     audio.play();
                 } catch (error) {
-                    const utterance = new SpeechSynthesisUtterance(text);
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
                     utterance.lang = 'es-UY';
+
+                    utterance.onboundary = (event) => {
+                        if (event.charIndex !== undefined) {
+                            setDisplayedText(fullTextToDisplay.slice(0, event.charIndex + (event.charLength || 1)));
+                        }
+                    };
+                    utterance.onend = () => {
+                        setDisplayedText(fullTextToDisplay);
+                    };
+
                     window.speechSynthesis.speak(utterance);
                 }
             };
 
+            // EFECTO AL CAMBIAR DE DIÁLOGO
             useEffect(() => {
-                if (step === 'story' && difficulty === 'narrada' && storyData) {
+                if (step === 'story' && storyData) {
                     const currentLine = storyData.story[currentStoryIndex];
-                    if (currentLine) {
-                        if (window.currentAudio) window.currentAudio.pause();
-                        window.speechSynthesis.cancel();
+                    if (!currentLine) return;
 
+                    if (window.currentAudio) window.currentAudio.pause();
+                    window.speechSynthesis.cancel();
+
+                    if (difficulty === 'narrada') {
+                        setDisplayedText(''); // Empieza vacío y se va escribiendo
                         const textToRead = currentLine.type === 'action'
                             ? `¡Atención ${currentLine.player_name}! Mueve a ${currentLine.character}. ${currentLine.text}`
                             : currentLine.text;
 
-                        playGoogleTTS(textToRead, currentLine.character);
+                        playGoogleTTS(textToRead, currentLine.character, currentLine.text);
+                    } else {
+                        // En modos de lectura infantil, se muestra todo directamente
+                        setDisplayedText(currentLine.text);
                     }
                 }
+
                 return () => {
                     if (window.currentAudio) window.currentAudio.pause();
                     window.speechSynthesis.cancel();
@@ -471,7 +491,7 @@
                 img.onload = () => {
                     setVideoSceneUrl(sceneUrl);
                     setStep('video_playing');
-                    playGoogleTTS(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, "Minnie");
+                    playGoogleTTS(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, "Minnie", storyData.moral);
                 };
                 img.onerror = () => {
                     setStep('finished');
@@ -747,7 +767,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // PASO 2: ESCENA ILUSTRADA CON FONDO, PERSONAJE Y BURBUJA DE DIÁLOGO
+            // PASO 2: ESCENA ILUSTRADA CON BURBUJA COMPACTA Y SINCRONIZADA
             if (step === 'story' && storyData) {
                 const current = storyData.story[currentStoryIndex];
                 const isAction = current.type === 'action';
@@ -761,101 +781,103 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     c.name.toLowerCase().includes(charLower)
                 ) || CHARACTERS[0];
 
+                const isStillSpeaking = difficulty === 'narrada' && displayedText.length < current.text.length;
+
                 return (
-                    <div className="min-h-screen flex flex-col p-3 sm:p-6 max-w-4xl mx-auto justify-center">
-                        {/* Escena Ilustrada */}
+                    <div className="min-h-screen flex flex-col p-2 sm:p-5 max-w-4xl mx-auto justify-center">
                         <div
-                            className="w-full relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white flex flex-col justify-between min-h-[580px] sm:min-h-[640px] transition-all bg-slate-900 bg-cover bg-center"
+                            className="w-full relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white flex flex-col justify-between min-h-[580px] sm:min-h-[640px] bg-slate-900 bg-cover bg-center"
                             style={{
                                 backgroundImage: `url("${encodeURI(currentZone.background || MAP_IMAGE)}")`
                             }}
                         >
-                            {/* Capa de contraste cinematográfica */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60 pointer-events-none"></div>
+                            {/* Sombra de contraste cinematográfica */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50 pointer-events-none"></div>
 
-                            {/* Barra superior de navegación y estado */}
-                            <div className="relative z-20 p-4 sm:p-6 flex justify-between items-center gap-3">
-                                <div className="bg-white/90 backdrop-blur-md px-5 py-2 rounded-full font-black text-xs text-slate-800 shadow-md flex items-center gap-2 border border-white">
+                            {/* Barra superior de información */}
+                            <div className="relative z-20 p-3 sm:p-5 flex justify-between items-center gap-2">
+                                <div className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full font-black text-xs text-slate-800 shadow-md flex items-center gap-2 border border-white">
                                     <span>📍</span>
                                     <span>{currentZone.name}</span>
-                                    <span className="text-slate-400">|</span>
-                                    <span className="text-pink-600 font-extrabold">{storyData.title}</span>
+                                    <span className="text-slate-300">|</span>
+                                    <span className="text-pink-600 font-extrabold truncate max-w-[150px] sm:max-w-none">{storyData.title}</span>
                                 </div>
 
-                                <div className="flex items-center space-x-3 shrink-0">
+                                <div className="flex items-center space-x-2 shrink-0">
                                     {difficulty !== 'narrada' && (
-                                        <span className={`w-4 h-4 rounded-full border-2 border-white ${isListening ? 'bg-rose-500 animate-ping' : 'bg-slate-300'}`}></span>
+                                        <span className={`w-3.5 h-3.5 rounded-full border-2 border-white ${isListening ? 'bg-rose-500 animate-ping' : 'bg-slate-300'}`}></span>
                                     )}
                                     <button
                                         onClick={advanceStory}
-                                        className="text-slate-800 hover:text-pink-600 text-xs font-black bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-full shadow-lg border border-white transition active:scale-95"
+                                        className="text-slate-800 hover:text-pink-600 text-xs font-black bg-white/95 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-white transition active:scale-95"
                                     >
                                         Avanzar ⏭
                                     </button>
                                 </div>
                             </div>
 
-                            {/* BURBUJA DE DIÁLOGO (SPEECH BUBBLE) */}
-                            <div className="relative z-20 max-w-xl mx-auto w-full px-4 pt-1 mb-auto">
-                                <div className={`relative rounded-3xl p-5 sm:p-7 shadow-2xl border-4 backdrop-blur-md transition-all ${isAction ? 'bg-amber-50/95 border-amber-300' : 'bg-white/95 border-pink-300'}`}>
-                                    {/* Cabecera de la burbuja: Turno del jugador y Personaje */}
-                                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-pink-100">
+                            {/* BURBUJA DE DIÁLOGO COMPACTA (DEJA VER EL FONDO) */}
+                            <div className="relative z-20 max-w-md sm:max-w-lg mx-auto w-full px-4 pt-0 mb-auto">
+                                <div className={`relative rounded-3xl p-4 sm:p-5 shadow-xl border-3 backdrop-blur-md transition-all ${isAction ? 'bg-amber-50/95 border-amber-300' : 'bg-white/95 border-pink-300'}`}>
+                                    {/* Cabecera de la burbuja */}
+                                    <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-pink-100">
                                         <span
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black text-white shadow-sm"
+                                            className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-black text-white shadow-sm"
                                             style={{ backgroundColor: current.player_color || '#EC4899' }}
                                         >
-                                            <span>⭐</span> Turno de: {current.player_name}
+                                            ⭐ Turno: {current.player_name}
                                         </span>
-                                        <span className="text-xs font-black text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-200">
-                                            {isAction ? '¡Acción Divertida! ⚡' : charObj.name}
+                                        <span className="text-[11px] sm:text-xs font-black text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-200">
+                                            {isAction ? '¡Acción! ⚡' : charObj.name}
                                         </span>
                                     </div>
 
-                                    {/* Texto del diálogo */}
-                                    <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
-                                        "{current.text}"
+                                    {/* Diálogo con texto progresivo y cursor */}
+                                    <p className="text-lg sm:text-xl font-black text-slate-800 leading-snug">
+                                        "{displayedText}
+                                        {isStillSpeaking && <span className="typing-cursor"></span>}"
                                     </p>
 
-                                    {/* Colita de la burbuja que apunta hacia el personaje */}
-                                    <div className={`absolute -bottom-4 left-14 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[16px] ${isAction ? 'border-t-amber-300' : 'border-t-pink-300'}`}></div>
-                                    <div className={`absolute -bottom-3 left-[58px] w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[14px] ${isAction ? 'border-t-amber-50' : 'border-t-white'}`}></div>
+                                    {/* Cola de la burbuja */}
+                                    <div className={`absolute -bottom-3 left-12 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] ${isAction ? 'border-t-amber-300' : 'border-t-pink-300'}`}></div>
+                                    <div className={`absolute -bottom-2.5 left-[49px] w-0 h-0 border-l-[9px] border-l-transparent border-r-[9px] border-r-transparent border-t-[11px] ${isAction ? 'border-t-amber-50' : 'border-t-white'}`}></div>
                                 </div>
                             </div>
 
-                            {/* ESCENARIO: PERSONAJE CUERPO COMPLETO + CONTROLES */}
-                            <div className="relative z-20 flex items-end justify-between w-full px-6 sm:px-12 pb-4 mt-auto">
-                                {/* Personaje en PNG de cuerpo entero */}
+                            {/* BASE DEL ESCENARIO: PERSONAJE Y CONTROLES */}
+                            <div className="relative z-20 flex items-end justify-between w-full px-4 sm:px-10 pb-3 mt-auto">
+                                {/* Personaje de cuerpo entero */}
                                 <div className="relative group">
                                     <img
                                         src={charObj.image}
                                         alt={charObj.name}
-                                        className="h-64 sm:h-80 object-contain filter drop-shadow-[0_15px_20px_rgba(0,0,0,0.6)] animate-bounce-gentle"
+                                        className="h-56 sm:h-72 object-contain filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.5)] animate-bounce-gentle select-none"
                                     />
-                                    <span className="block text-center mt-1 text-xs font-extrabold text-white bg-slate-900/60 backdrop-blur-sm px-3 py-0.5 rounded-full border border-white/20">
+                                    <span className="block text-center mt-1 text-[11px] font-extrabold text-white bg-slate-900/60 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-white/20">
                                         {charObj.name}
                                     </span>
                                 </div>
 
-                                {/* Panel inferior de lectura / micrófono */}
-                                <div className="flex flex-col items-center max-w-xs text-center mb-2">
+                                {/* Indicador de lectura / narración */}
+                                <div className="flex flex-col items-center max-w-[200px] sm:max-w-xs text-center mb-1">
                                     {difficulty === 'narrada' ? (
-                                        <div className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-2xl mb-2 border border-white">
+                                        <div className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-xl mb-1.5 border border-white">
                                             🗣️
                                         </div>
                                     ) : (
-                                        <div className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-2xl listening-indicator mb-2 border border-white">
+                                        <div className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-xl listening-indicator mb-1.5 border border-white">
                                             🎙️
                                         </div>
                                     )}
 
-                                    <p className="text-xs sm:text-sm font-black text-slate-800 bg-white/95 backdrop-blur-md px-5 py-2 rounded-full shadow-lg border border-white">
+                                    <p className="text-[11px] sm:text-xs font-black text-slate-800 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-white">
                                         {difficulty === 'narrada'
                                             ? "Escuchando el cuento narrado..."
-                                            : (isAction ? "¡Haz el sonido y mueve el muñeco!" : "Lee en voz alta para avanzar")}
+                                            : (isAction ? "¡Haz el sonido y muévelo!" : "Lee en voz alta para avanzar")}
                                     </p>
 
                                     {transcript && difficulty !== 'narrada' && (
-                                        <p className="text-xs font-bold text-slate-700 mt-2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-xl max-w-full truncate shadow-md border border-white">
+                                        <p className="text-[10px] font-bold text-slate-700 mt-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-xl max-w-full truncate shadow-md border border-white">
                                             Escuchado: "{transcript}"
                                         </p>
                                     )}

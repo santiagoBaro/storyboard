@@ -1,5 +1,6 @@
 import { ZONES_PROMPT_LIST, MAP_ZONES } from './fondos.js';
-import { CHARACTERS, NPCS } from './personajes.js';
+import { CHARACTERS } from './personajes.js';
+import { NPCS } from './npc.js';
 
 const NPCS_PROMPT_LIST = NPCS.map(n => `- "${n.name}": ${n.subtitle}`).join('\n');
 

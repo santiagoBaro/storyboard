@@ -78,69 +78,76 @@ export function evaluateSpeechProgress(spoken, currentLine, difficulty) {
 }
 
 /**
- * Genera una ilustración usando Gemini Nano Banana 2.1 (con fallback para alta disponibilidad)
+ * Genera una ilustración usando Gemini Nano Banana 2.1
  */
 export async function generateEventImage(promptText, apiKey) {
     const cleanKey = apiKey?.trim();
-    if (cleanKey) {
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-nano-banana-2.1:generateContent?key=${cleanKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generationConfig: {
-                        responseModalities: ['IMAGE']
-                    }
-                })
-            });
+    if (!cleanKey) return null;
 
-            if (response.ok) {
-                const data = await response.json();
-                const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (imagePart?.inlineData?.data) {
-                    return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-nano-banana-2.1:generateContent?key=${cleanKey}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                    responseModalities: ['IMAGE']
                 }
-            }
-        } catch (err) {
-            console.warn('Fallo en gemini-nano-banana-2.1, recurriendo a fallback:', err);
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error(`[Gemini Nano Banana 2.1 Error ${response.status}]:`, errText);
+            return null;
         }
+
+        const data = await response.json();
+        const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (imagePart?.inlineData?.data) {
+            return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+        }
+    } catch (err) {
+        console.error('[Gemini Nano Banana 2.1 Fallo]:', err);
     }
 
-    const cleanPrompt = encodeURIComponent(promptText.slice(0, 280));
-    return `https://image.pollinations.ai/prompt/${cleanPrompt}?width=800&height=500&nologo=true`;
+    return null;
 }
 
 /**
- * Genera un clip de video usando Gemini Omni 1.1 Flash
+ * Genera el clip de video final usando Gemini Omni 1.1 Flash
  */
 export async function generateEventVideo(promptText, apiKey) {
     const cleanKey = apiKey?.trim();
-    if (cleanKey) {
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-omni-1.1-flash:generateContent?key=${cleanKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generationConfig: {
-                        responseModalities: ['VIDEO']
-                    }
-                })
-            });
+    if (!cleanKey) return null;
 
-            if (response.ok) {
-                const data = await response.json();
-                const videoPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                if (videoPart?.inlineData?.data) {
-                    return `data:${videoPart.inlineData.mimeType || 'video/mp4'};base64,${videoPart.inlineData.data}`;
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-omni-1.1-flash:generateContent?key=${cleanKey}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                    responseModalities: ['VIDEO']
                 }
-            }
-        } catch (err) {
-            console.warn('Fallo en gemini-omni-1.1-flash:', err);
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error(`[Gemini Omni 1.1 Flash Error ${response.status}]:`, errText);
+            return null;
         }
+
+        const data = await response.json();
+        const videoPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (videoPart?.inlineData?.data) {
+            return `data:${videoPart.inlineData.mimeType || 'video/mp4'};base64,${videoPart.inlineData.data}`;
+        }
+    } catch (err) {
+        console.error('[Gemini Omni 1.1 Flash Fallo]:', err);
     }
 
     return null;

@@ -1,15 +1,11 @@
 import { ZONES_PROMPT_LIST, MAP_ZONES } from './fondos.js';
 import { CHARACTERS } from './personajes.js';
 
-/**
- * Normaliza y repara cada viñeta para asegurar que siempre tenga fondo ilustrado,
- * personaje y texto sin prefijos.
- */
 export function normalizePanel(panel, players = [], selectedCharacters = []) {
     let text = (panel.text || '').trim();
     let character = (panel.character || '').trim();
 
-    // Si el texto tiene formato "Minnie: ¡Amigos...", extrae el personaje y limpia el texto
+    // Elimina prefijos repetidos tipo "Minnie: ..."
     const prefixMatch = text.match(/^([A-Za-zÁ-ÿ\s\(\)]+):\s*(.+)$/s);
     if (prefixMatch) {
         if (!character || character.toLowerCase() === 'todos') {
@@ -18,7 +14,6 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         text = prefixMatch[2].trim();
     }
 
-    // Normalizar personaje según CHARACTERS
     let matchedChar = CHARACTERS.find(c =>
         c.name.toLowerCase() === character.toLowerCase() ||
         c.id.toLowerCase() === character.toLowerCase() ||
@@ -32,7 +27,6 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         character = matchedChar.name;
     }
 
-    // Asociar jugador correspondiente
     let assignedPlayer = null;
     if (matchedChar) {
         const assignment = selectedCharacters.find(sc => sc.char.id === matchedChar.id);
@@ -43,14 +37,12 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
     const playerName = panel.player_name || assignedPlayer?.name || players[0]?.name || 'Jugador 1';
     const playerColor = panel.player_color || assignedPlayer?.color || players[0]?.color || '#EC4899';
 
-    // Normalizar ubicación a las claves de fondos.js
     let rawLoc = (panel.locationId || '').toLowerCase().trim();
     let locationId = 'minnie_living';
 
     if (MAP_ZONES[rawLoc]) {
         locationId = rawLoc;
     } else {
-        // Coincidencia por nombre de zona o palabra clave
         for (const [key, zone] of Object.entries(MAP_ZONES)) {
             if (
                 rawLoc.includes(key) ||
@@ -61,7 +53,6 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
                 break;
             }
         }
-        // Mapeo semántico de respaldo
         if (locationId === 'minnie_living') {
             if (rawLoc.includes('escenario')) locationId = 'escenario';
             else if (rawLoc.includes('playa')) locationId = 'playa';
@@ -105,22 +96,25 @@ ${playersPrompt}
 UBICACIONES OBLIGATORIAS (Usa ÚNICAMENTE estas claves exactas en locationId):
 ${ZONES_PROMPT_LIST}
 
-REGLAS DE NARRATIVA:
-1. DISPERSIÓN INICIAL: Cada personaje DEBE empezar en una ubicación DISTINTA del mapa.
-2. TIPOS DE VIÑETA (Intercala estos 3 tipos):
-   - "dialogue": Charla o réplica de un personaje.
-   - "event": Suceso extraordinario o giro inesperado (un arcoíris, un viento misterioso, un puente roto).
-   - "action": Reto motriz con el muñeco en el mapa (esquivar, correr, saltar).
-3. ONOMATOPEYAS: Cada viñeta debe incluir una onomatopeya corta ("¡ZAS!", "¡BOOM!", "¡WIII!").
-4. TEXTO LIMPIO: En el campo "text" pon ÚNICAMENTE lo que dice el personaje (NUNCA incluyas prefijos como "Minnie: ").
-5. ELECCIONES FINALES: Concluye con exactamente 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
+REGLAS DE NARRATIVA EN ORDEN CRONOLÓGICO:
+1. ORDEN CRONOLÓGICO Y TIEMPO LINEAL ESTRICTO:
+   - Viñeta 1 a 3: Inicio cronológico. Los personajes están en sus puntos de origen dispersos y se comunican o emprenden el viaje.
+   - Viñetas intermedias: Progresión temporal continua. Viajan paso a paso, van encontrando a los amigos uno por uno y los suman al grupo.
+   - Los eventos extraordinarios ("event") y acciones ("action") ocurren secuencialmente en el lugar donde el grupo se encuentra en ese momento temporal. Cada viñeta es consecuencia directa de la anterior.
+2. TIPOS DE VIÑETA:
+   - "dialogue": Diálogo entre personajes.
+   - "event": Suceso extraordinario o giro inesperado que plantea un obstáculo.
+   - "action": Reto físico en el mapa con el muñeco.
+3. ONOMATOPEYAS: Cada viñeta debe tener su onomatopeya sonora ("¡ZAS!", "¡BOOM!", "¡WIII!").
+4. TEXTO LIMPIO: En "text" pon SOLO las palabras habladas sin prefijos.
+5. ELECCIONES FINALES: 3 choices al final (2 "continue" y 1 "finish").
 
 Devuelve EXCLUSIVAMENTE este JSON válido:
 {
   "title": "Aventura en el Club",
   "moral": "Trabajando en equipo y ayudándonos superamos cualquier reto",
   "initial_positions": [
-    { "character": "${selectedCharacters[0]?.char.name || 'Minnie'}", "locationId": "granja", "description": "cuidando a los animales" }
+    { "character": "${selectedCharacters[0]?.char.name || 'Minnie'}", "locationId": "granja", "description": "esperando en la granja" }
   ],
   "panels": [
     {
@@ -154,56 +148,22 @@ export async function continueStoryPrompt({ players, selectedCharacters, previou
     const cleanKey = apiKey?.trim();
     if (!cleanKey) throw new Error('Se requiere una Clave API de Gemini válida.');
 
-    const playersPrompt = players.map(p => {
-        const chars = selectedCharacters.filter(sc => sc.playerId === p.id).map(sc => sc.char.name);
-        return `- ${p.name} (Color: ${p.color}) controla a: ${chars.length > 0 ? chars.join(', ') : 'Ninguno'}`;
-    }).join('\n');
-
-    const charNames = selectedCharacters.map(sc => sc.char.name).join(', ');
-
     const prompt = `
-Continúa el siguiente capítulo de la historieta cómic interactiva (entre 12 y 20 viñetas).
+Continúa el siguiente capítulo de la historieta infantil en ESTRICTO ORDEN CRONOLÓGICO (entre 12 y 20 viñetas).
 
-Contexto anterior: ${previousSummary}
-Los niños acaban de elegir: "${choiceText}"
+Momento anterior en la línea de tiempo: ${previousSummary}
+Decisión tomada por los niños: "${choiceText}"
 
-Personajes en juego: ${charNames}.
-Jugadores:
-${playersPrompt}
-
-UBICACIONES OBLIGATORIAS (Usa ÚNICAMENTE estas claves exactas en locationId):
+UBICACIONES OBLIGATORIAS:
 ${ZONES_PROMPT_LIST}
 
-REGLAS ESTRICTAS DE FORMATO:
-1. Genera entre 12 y 20 viñetas combinando "dialogue", "event" y "action".
-2. En el campo "locationId" usa ÚNICAMENTE las claves en minúsculas (ej: "escenario", "playa", "granja"). NUNCA uses "El Escenario".
-3. En el campo "character" indica el nombre exacto del personaje (ej: "Minnie", "Mickey").
-4. En el campo "text" pon SOLO las palabras habladas, NUNCA escribas "Minnie: " ni el nombre del personaje al inicio.
-5. Concluye de nuevo con 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
+REGLAS CRONOLÓGICAS:
+1. La primera viñeta debe ser la consecuencia directa de la decisión tomada y continuar la línea temporal sin saltos.
+2. Intercala viñetas de "dialogue", "event" y "action" siguiendo el orden cronológico del viaje del equipo.
+3. Termina de nuevo con 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
 
-Devuelve EXCLUSIVAMENTE este JSON válido:
-{
-  "title": "Aventura en el Club",
-  "moral": "Compartir y divertirse juntos hace la magia",
-  "panels": [
-    {
-      "panel_number": 1,
-      "type": "dialogue",
-      "character": "${selectedCharacters[0]?.char.name || 'Minnie'}",
-      "player_name": "${players[0]?.name || 'Jugador 1'}",
-      "player_color": "${players[0]?.color || '#38BDF8'}",
-      "text": "¡Miren a dónde nos llevó esta pista! ¡Llegamos al escenario!",
-      "locationId": "escenario",
-      "onomatopoeia": "¡TA-DA!",
-      "target_words": ["miren", "pista", "escenario"]
-    }
-  ],
-  "choices": [
-    { "id": "1", "type": "continue", "text": "Subir al escenario y hacer un show de talentos" },
-    { "id": "2", "type": "continue", "text": "Buscar un mapa secreto detrás del telón" },
-    { "id": "3", "type": "finish", "text": "Terminar la función con aplausos y descansar" }
-  ]
-}`;
+Devuelve EXCLUSIVAMENTE este JSON válido con la misma estructura.
+`;
 
     const data = await executeGeminiRequest(prompt, cleanKey);
     const rawPanels = data.panels || data.story || [];

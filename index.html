@@ -210,7 +210,7 @@
             const [isUrlKey] = useState(!!keyFromUrl);
 
             const [wizardStep, setWizardStep] = useState(!apiKey ? 0 : 1);
-            const [step, setStep] = useState('setup'); // 'setup' | 'loading_story' | 'positioning' | 'story' | 'generating_video' | 'video_playing' | 'error'
+            const [step, setStep] = useState('setup');
 
             const [players, setPlayers] = useState(() => JSON.parse(localStorage.getItem('gemini_story_players') || '[]'));
             const [selectedCharacters, setSelectedCharacters] = useState(() => JSON.parse(localStorage.getItem('gemini_story_selected_chars') || '[]'));
@@ -223,8 +223,8 @@
             const [chapterCount, setChapterCount] = useState(1);
             const [errorMessage, setErrorMessage] = useState('');
 
-            // Imágenes de las viñetas generadas con Gemini Nano Banana
-            const [panelImages, setPanelImages] = useState({});
+            // Imágenes de eventos generadas con Gemini Nano Banana
+            const [eventImages, setEventImages] = useState({});
             const [imageGenProgress, setImageGenProgress] = useState({ current: 0, total: 0, isGenerating: false });
 
             // Video final con Gemini Omni Flash
@@ -268,29 +268,44 @@
             }, [storyData, selectedCharacters]);
 
             /**
-             * Genera las imágenes de forma SECUENCIAL (1 por 1) en segundo plano
+             * GENERACIÓN SECUENCIAL EN ESTRICTO ORDEN CRONOLÓGICO:
+             * Ordena los eventos de la historia desde la primera viñeta hasta la última,
+             * y genera las imágenes con Gemini Nano Banana 2.1 una por una.
              */
-            const generateAllPanelImagesSequentially = async (panelList) => {
-                setImageGenProgress({ current: 0, total: panelList.length, isGenerating: true });
+            const generateEventImagesChronologically = async (panelList) => {
+                const eventPanels = panelList
+                    .map((p, index) => ({ ...p, originalIndex: index }))
+                    .filter(p => p.type === 'event')
+                    .sort((a, b) => a.originalIndex - b.originalIndex); // Orden cronológico garantizado
 
-                for (let i = 0; i < panelList.length; i++) {
-                    const p = panelList[i];
+                if (eventPanels.length === 0) {
+                    setImageGenProgress({ current: 0, total: 0, isGenerating: false });
+                    return;
+                }
+
+                setImageGenProgress({ current: 0, total: eventPanels.length, isGenerating: true });
+
+                for (let i = 0; i < eventPanels.length; i++) {
+                    const p = eventPanels[i];
+                    const realIndex = p.originalIndex;
                     const zone = MAP_ZONES[p.locationId] || MAP_ZONES['minnie_living'];
-                    const prompt = `Disney Pixar 3D animated comic illustration for kids. Location: ${zone.name}. Characters: ${p.character}. Story action: ${p.text}. Colorful, cheerful, volumetric light.`;
+                    const prompt = `Disney Pixar 3D animated comic style, chronological scene event #${i + 1}. Location: ${zone.name}. Characters: ${p.character}. Event: ${p.text}. Cheerful, vivid magical lighting, cinematic high quality cartoon render, no text on image.`;
 
                     try {
+                        console.log(`[Cronológico] Generando imagen para Evento en viñeta #${realIndex + 1} (${i + 1}/${eventPanels.length})...`);
                         const imgUri = await generateEventImage(prompt, apiKey);
                         if (imgUri) {
-                            setPanelImages(prev => ({ ...prev, [i]: imgUri }));
+                            setEventImages(prev => ({ ...prev, [realIndex]: imgUri }));
+                            console.log(`[Cronológico] ✓ Evento #${realIndex + 1} listo.`);
                         }
                     } catch (e) {
-                        console.warn(`Error en viñeta #${i + 1}, usando fondo local:`, e);
+                        console.warn(`[Cronológico] No se pudo generar viñeta #${realIndex + 1}, se usará fondo ilustrado:`, e);
                     }
 
-                    setImageGenProgress({ current: i + 1, total: panelList.length, isGenerating: i + 1 < panelList.length });
+                    setImageGenProgress({ current: i + 1, total: eventPanels.length, isGenerating: i + 1 < eventPanels.length });
 
-                    // Pausa de 250ms entre cada imagen para no saturar transacciones por segundo
-                    await new Promise(r => setTimeout(r, 250));
+                    // Pausa entre peticiones para respetar la tasa de la API
+                    await new Promise(r => setTimeout(r, 350));
                 }
             };
 
@@ -333,7 +348,7 @@
                 }
             };
 
-            // Iniciar historia: genera guión con Gemini 3.1, entra al tablero inmediatamente e inicia generación secuencial
+            // Iniciar historia: pasa al mapa inmediatamente e inicia la cola cronológica de imágenes
             const handleStartStory = async () => {
                 setStep('loading_story');
                 setErrorMessage('');
@@ -343,13 +358,13 @@
                     setCurrentPositionIndex(0);
                     setActivePanelIndex(0);
                     setChapterCount(1);
-                    setPanelImages({});
+                    setEventImages({});
 
-                    // Pasa directo a colocar las fichas en el tablero
+                    // Entra directo al tablero sin demoras
                     setStep('positioning');
 
-                    // Genera las imágenes en segundo plano secuencialmente
-                    generateAllPanelImagesSequentially(data.panels || data.story || []);
+                    // Genera las imágenes en estricto orden cronológico en segundo plano
+                    generateEventImagesChronologically(data.panels || data.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage(err.message || 'Error al conectar con Gemini.');
@@ -357,7 +372,7 @@
                 }
             };
 
-            // Manejar elección: continuar el cómic o generar el video final
+            // Manejar elección final: seguir la historia o generar video final
             const handleSelectChoice = async (choice) => {
                 dialogAudio.stop();
 
@@ -377,7 +392,7 @@
                             setIsVideoOutput(false);
                         }
                     } catch (vErr) {
-                        console.warn('Error en video, mostrando imagen de cierre:', vErr);
+                        console.warn('Error en video final, mostrando ilustración:', vErr);
                         setVideoFinalUrl(MAP_ZONES['minnie_living']?.sceneImage || MAP_IMAGE);
                         setIsVideoOutput(false);
                     }
@@ -387,7 +402,7 @@
                     return;
                 }
 
-                // Si continúa, crea el siguiente capítulo y sus imágenes secuenciales
+                // Continúa cronológicamente el cómic
                 setStep('loading_story');
                 try {
                     const summary = panels.map(p => `[${p.type}] ${p.character}: ${p.text}`).join(' ');
@@ -408,10 +423,10 @@
                     }));
                     setActivePanelIndex(0);
                     setChapterCount(c => c + 1);
-                    setPanelImages({});
+                    setEventImages({});
 
                     setStep('story');
-                    generateAllPanelImagesSequentially(nextData.panels || nextData.story || []);
+                    generateEventImagesChronologically(nextData.panels || nextData.story || []);
                 } catch (err) {
                     console.error(err);
                     setErrorMessage('No pudimos continuar el cómic.');
@@ -454,7 +469,7 @@
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
                         <div className="text-7xl mb-4 animate-bounce">📚</div>
                         <h2 className="text-3xl font-black text-slate-800">Escribiendo la historia con Gemini 3.1...</h2>
-                        <p className="text-pink-500 font-bold mt-2">Creando viñetas de diálogo, acción y eventos extraordinarios.</p>
+                        <p className="text-pink-500 font-bold mt-2">Ordenando las viñetas en secuencia cronológica.</p>
                     </div>
                 );
             }
@@ -484,7 +499,7 @@
                                     <img src={videoFinalUrl} alt="Escena Final" className="video-scene-image" />
                                 )}
                                 <div className="absolute top-3 left-3 bg-red-600 border border-white px-3 py-0.5 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow">
-                                    {isVideoOutput ? 'Video IA (Omni Flash)' : 'Ilustración Final IA'}
+                                    {isVideoOutput ? 'Video IA (Omni Flash)' : 'Ilustración Final'}
                                 </div>
                             </div>
 
@@ -521,7 +536,7 @@
                 );
             }
 
-            /* PREPARACIÓN DEL TABLERO (SIN LOADERS, SE MUESTRAN LOS LUGARES INMEDIATAMENTE) */
+            /* PREPARACIÓN DEL TABLERO */
             if (step === 'positioning' && storyData) {
                 const pos = initialPositions[currentPositionIndex] || initialPositions[0];
                 const charObj = CHARACTERS.find(c => c.name.toLowerCase() === (pos?.character || '').toLowerCase()) || { name: pos?.character || 'Personaje', image: '', emoji: '🧸' };
@@ -529,12 +544,12 @@
 
                 return (
                     <div className="min-h-screen flex flex-col items-center p-4 max-w-xl mx-auto justify-center relative">
-                        {/* Indicador flotante discreto del proceso de IA en segundo plano */}
+                        {/* Indicador de progreso cronológico */}
                         {imageGenProgress.isGenerating && (
                             <div className="fixed top-4 right-4 bg-white/95 backdrop-blur-md border-2 border-slate-900 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-[4px_4px_0px_#0f172a] z-50">
                                 <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-pink-500 rounded-full animate-spin" />
                                 <span className="text-xs font-black text-slate-800">
-                                    Pintando viñetas con Gemini ({imageGenProgress.current}/{imageGenProgress.total})
+                                    Pintando eventos en orden cronológico ({imageGenProgress.current}/{imageGenProgress.total})
                                 </span>
                             </div>
                         )}
@@ -599,9 +614,7 @@
 
                 const isEvent = activePanel.type === 'event';
                 const isAction = activePanel.type === 'action';
-
-                // Imagen generada por IA para esta viñeta (o ilustración de fondos si aún se está procesando)
-                const currentPanelAiImage = panelImages[activePanelIndex];
+                const activePanelAiEventImg = isEvent ? eventImages[activePanelIndex] : null;
 
                 return (
                     <div className="min-h-screen flex flex-col p-3 sm:p-5 max-w-4xl mx-auto justify-between select-none relative">
@@ -639,11 +652,10 @@
                         {/* Escenario de la Viñeta Activa */}
                         <div className={`relative rounded-[2rem] overflow-hidden border-4 shadow-[8px_8px_0px_#0f172a] min-h-[380px] sm:min-h-[440px] flex flex-col justify-between p-4 sm:p-6 mb-4 ${isEvent ? 'border-amber-500 bg-amber-950' : (isAction ? 'border-yellow-500 bg-yellow-950' : 'border-slate-900 bg-slate-900')}`}>
 
-                            {/* Imagen: IA si está lista, o fondo local de ./fondos/ */}
                             <img
-                                src={currentPanelAiImage || activeZone.sceneImage || MAP_IMAGE}
+                                src={activePanelAiEventImg || activeZone.sceneImage || MAP_IMAGE}
                                 alt={activeZone.name}
-                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${currentPanelAiImage ? 'brightness-95 contrast-[1.02]' : 'filter brightness-[0.80] contrast-[1.05]'}`}
+                                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${activePanelAiEventImg ? 'brightness-95 contrast-[1.02]' : 'filter brightness-[0.80] contrast-[1.05]'}`}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/30 pointer-events-none" />
 
@@ -660,7 +672,7 @@
                                     {isEvent && (
                                         <span className="bg-amber-400 border-2 border-slate-900 text-slate-900 font-black text-[10px] px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#0f172a] uppercase flex items-center gap-1">
                                             <span>✨</span>
-                                            <span>{currentPanelAiImage ? 'ILUSTRACIÓN IA' : 'EVENTO EXTRAORDINARIO'}</span>
+                                            <span>{activePanelAiEventImg ? 'ILUSTRACIÓN IA' : 'EVENTO EXTRAORDINARIO'}</span>
                                         </span>
                                     )}
 
@@ -692,7 +704,7 @@
                                             ¡Mueve tu muñeco!
                                         </span>
                                     </div>
-                                ) : isEvent && !currentPanelAiImage ? (
+                                ) : isEvent && !activePanelAiEventImg ? (
                                     <div className="flex flex-col items-center">
                                         <div className="text-7xl animate-pulse drop-shadow-[0_12px_20px_rgba(0,0,0,0.8)]">🌟</div>
                                         <span className="bg-amber-300 border-2 border-slate-900 px-3 py-0.5 rounded-xl font-black text-xs text-slate-900 mt-1 shadow-[2px_2px_0px_#0f172a]">
@@ -746,8 +758,10 @@
                             <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                                 {panels.map((p, idx) => {
                                     const isCur = idx === activePanelIndex;
-                                    const thumb = panelImages[idx];
-                                    const typeIcon = p.type === 'event' ? (thumb ? '🖼️' : '🌟') : (p.type === 'action' ? '⚡' : '💬');
+                                    const zone = MAP_ZONES[p.locationId] || MAP_ZONES['minnie_living'];
+                                    const thumb = (p.type === 'event' && eventImages[idx]) ? eventImages[idx] : (zone.sceneImage || MAP_IMAGE);
+                                    const typeIcon = p.type === 'event' ? '🌟' : (p.type === 'action' ? '⚡' : '💬');
+
                                     return (
                                         <button
                                             key={idx}
@@ -757,9 +771,7 @@
                                             }}
                                             className={`comic-panel h-14 relative overflow-hidden bg-slate-900 flex flex-col justify-between p-1 ${isCur ? 'active border-pink-500 shadow-[2px_2px_0px_#ec4899]' : 'opacity-70 hover:opacity-100'}`}
                                         >
-                                            {thumb && (
-                                                <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover filter brightness-[0.7]" />
-                                            )}
+                                            <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover filter brightness-[0.7]" />
                                             <span className="relative z-10 text-[9px] font-black bg-white/90 text-slate-900 px-1 rounded w-max">
                                                 #{idx + 1}
                                             </span>
@@ -772,7 +784,7 @@
                             </div>
                         </div>
 
-                        {/* Opciones finales */}
+                        {/* Opciones finales para continuar o terminar con Video IA */}
                         {isLastPanel && storyData.choices && storyData.choices.length > 0 && (
                             <div className="bg-amber-50 border-4 border-slate-900 rounded-3xl p-5 shadow-[6px_6px_0px_#0f172a] text-center">
                                 <span className="font-comic text-2xl text-slate-900 block mb-1">¿CÓMO SIGUE ESTA HISTORIA? ✨</span>
@@ -788,7 +800,7 @@
                                                 className={`border-3 border-slate-900 p-3.5 rounded-2xl font-black text-xs sm:text-sm text-left shadow-[3px_3px_0px_#0f172a] transition active:translate-x-1 active:translate-y-1 flex items-center gap-2.5 ${isFinish ? 'bg-amber-200 hover:bg-amber-300 text-amber-950' : 'bg-white hover:bg-pink-100 text-slate-800'}`}
                                             >
                                                 <span className="text-2xl shrink-0">{isFinish ? '🎬' : '👉'}</span>
-                                                <span className="leading-tight">{isFinish ? `${c.text} (Crear Video IA)` : c.text}</span>
+                                                <span className="leading-tight">{isFinish ? `${c.text} (Crear Video)` : c.text}</span>
                                             </button>
                                         );
                                     })}

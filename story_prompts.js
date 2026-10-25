@@ -26,7 +26,7 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         character.toLowerCase().includes(c.name.toLowerCase())
     );
 
-    // Si no está en jugables, buscar en NPCs
+    // Búsqueda en NPCs
     let isNpc = false;
     let npcObj = null;
     if (!matchedChar) {
@@ -48,7 +48,7 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
         character = matchedChar.name;
     }
 
-    // Jugador asignado al personaje (si es NPC no tiene jugador)
+    // Jugador asignado al personaje
     let assignedPlayer = null;
     if (matchedChar) {
         const assignment = selectedCharacters.find(sc => (sc.char?.id || sc.id) === matchedChar.id);
@@ -58,14 +58,14 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
     }
 
     const playerName = isNpc
-        ? 'Travieso Misterioso'
+        ? 'Travieso'
         : (panel.player_name || assignedPlayer?.name || players[0]?.name || 'Jugador 1');
 
     const playerColor = isNpc
         ? '#8B5CF6'
         : (panel.player_color || assignedPlayer?.color || players[0]?.color || '#EC4899');
 
-    // Mapeo seguro de zonas a IDs oficiales
+    // Mapeo seguro de zonas
     let rawLoc = (panel.locationId || '').toLowerCase().trim();
     let locationId = 'minnie_living';
 
@@ -113,7 +113,8 @@ export function normalizePanel(panel, players = [], selectedCharacters = []) {
 }
 
 /**
- * Generador principal del guión interactivo con integración de NPCs
+ * Generador principal del guión interactivo con mínimo 30 slides
+ * y alternancia estricta entre diálogos y eventos visuales.
  */
 export async function generateStoryPrompt({ players, selectedCharacters, apiKey }) {
     const cleanKey = apiKey?.trim();
@@ -129,59 +130,51 @@ export async function generateStoryPrompt({ players, selectedCharacters, apiKey 
         return `- ${p.name} (Color: ${p.color}, Estrella: ${p.isStar ? 'SÍ (Protagonista)' : 'NO (Amigo)'}) controla a: ${chars.length > 0 ? chars.join(', ') : 'Ninguno'}`;
     }).join('\n');
 
-    const npcsPromptList = NPCS.map(n => `- "${n.name}" (${n.id}): ${n.subtitle}. Voice archetype: ${n.voice_design}`).join('\n');
+    const npcsPromptList = NPCS.map(n => `- "${n.name}" (${n.id}): ${n.subtitle}. Voice: ${n.voice_design}`).join('\n');
 
     const prompt = `
-Eres un guionista senior de Disney Junior y experto en la técnica de narrativa de South Park ("Therefore / But" - Causa y Efecto estricta).
-Crea un guión interactivo infantil en formato cómic/slides para niñas de 4 a 6 años.
+Eres un guionista principal de Disney Junior experto en la estructura narrativa de causa y efecto de South Park ("POR LO TANTO... / PERO...").
+Crea un guión interactivo largo (MÍNIMO 30 PANELES) para niñas de 4 a 6 años.
 
-PÚBLICO Y TONO:
-- Niñas de 4 a 6 años: Tierno, alegre, enfocado en compartir, resolver misterios y empatía.
-- MOTOR DE NARRATIVA SOUTH PARK: Cada viñeta debe conectarse con "POR LO TANTO..." (consecuencia directa) o "PERO..." (complicación inesperada). PROHIBIDO usar "Y entonces".
+REGLAS DE ORO SOBRE LA ESTRUCTURA Y TIPOS DE PANELES:
+1. LONGITUD OBLIGATORIA: El array "panels" DEBE tener un MÍNIMO DE 30 VIÑETAS (entre 30 y 35 viñetas numeradas consecutivamente del 1 al 30+).
+2. DISTRIBUCIÓN ESTRICTA DE TIPOS (NO GENERES SOLO DIÁLOGOS):
+   - Al menos 10 viñetas de tipo "image_event" (fotografías de descubrimientos, pistas y sucesos).
+   - Al menos 6 viñetas de tipo "video_event" (animaciones de movimiento, carreras, sustos cómicos y bailes).
+   - El resto de tipo "dialogue".
+   - REGLA DE ALTERNANCIA: ESTÁ TERMINANTEMENTE PROHIBIDO tener más de 2 viñetas consecutivas de tipo "dialogue". Después de 1 o 2 diálogos, DEBE haber obligatoriamente un "image_event" o "video_event".
 
-JUGADORES Y PERSONAJES ACTIVOS:
+MOTOR NARRATIVO (SOUTH PARK):
+Cada viñeta debe ser consecuencia directa de la anterior ("POR LO TANTO...") o presentar una complicación ("PERO..."). Jamás uses "Y entonces".
+
+JUGADORES Y PERSONAJES:
 ${playersPrompt}
 
-ELENCO DE ANTAGONISTAS/NPCS DISPONIBLES (Elige a UNO de ellos como el causante de la travesura):
+ANTAGONISTAS/NPCS DISPONIBLES (Elige a UNO de ellos como el centro del misterio):
 ${npcsPromptList}
+- Milo: colecciona cosas brillantes (estrellas caídas). Pista: purpurina plateada. Trampa: cofre con espejos.
+- Don Teo: oculta cosas ruidosas en almohadas para dormir. Pista: plumas de almohada. Trampa: rincón con nana suave.
+- Lulú: hace malabares y cambia cosas de lugar. Pista: serpentinas y frutas. Trampa: red con globos.
+- Pipo: busca dulces y pasteles. Pista: huellitas de crema rosa y chispas. Trampa: camino de frutillas.
+- Rayo Rodante: corre a toda velocidad. Pista: marcas de ruedas fosforescentes. Trampa: pista con barrera de pompones.
 
-REGLAS PARA EL ANTAGONISTA ELEGIDO:
-- Si eliges a Milo: colecciona cosas brillantes (joyas, moños, llaves) creyendo que son estrellas caídas. Deja huellitas de purpurina.
-- Si eliges a Don Teo: tiene sueño y esconde cosas ruidosas (silbatos, bocinas, instrumentos) en almohadas para dormir su siesta. Deja plumas de almohada.
-- Si eliges a Lulú: hace malabares e intercambia cosas de lugar para que jueguen con ella. Deja cáscaras de banana o cintas de circo.
-- Si eliges a Pipo: busca dulces, pasteles y frutas para comer. Deja huellitas pegajosas de crema o chispas de colores.
-- Si eliges a Rayo Rodante: acelera y compite con el Auto Rojo. Deja marcas de ruedas fosforescentes o sonido a cuerda ("¡zic-zic!").
-
-UBICACIONES OBLIGATORIAS (Usa ÚNICAMENTE estas claves exactas en locationId):
+UBICACIONES OBLIGATORIAS (Usa SOLO estos IDs exactos en locationId):
 ${ZONES_PROMPT_LIST}
 
-ESTRUCTURA EXACTA DE LA HISTORIA (15 pasos cronológicos en orden estricto):
+ARQUITECTURA DE LA HISTORIA (Distribuye los 30+ paneles a través de estas 8 fases):
+- Fase 1 (Paneles 1 a 5): Apertura de los personajes estrella (${starNames}). Intercala diálogos con "image_event" de lo que juegan y un "video_event" cuando se saludan.
+- Fase 2 (Paneles 6 a 9): Encuentro con los demás amigos en el mapa. Diálogos breves intercalados con un "video_event" jugando todos juntos.
+- Fase 3 (Paneles 10 a 13): Ocurre el suceso misterioso causado por el NPC. "image_event" de lo que desapareció, diálogos de alarma y "video_event" corriendo a investigar.
+- Fase 4 (Paneles 14 a 18): Búsqueda de pistas. "image_event" encontrando la pista característica del NPC, diálogos descartando sospechosos inocentes.
+- Fase 5 (Paneles 19 a 22): Casi lo atrapan (Near Miss). "image_event" de una sombra, diálogos de sospecha y "video_event" donde el NPC pasa volando/corriendo a sus espaldas sin ser visto.
+- Fase 6 (Paneles 23 a 26): El plan y la trampa. Diálogos coordinando la idea, "image_event" construyendo la trampa con el señuelo y diálogos susurrando escondidos.
+- Fase 7 (Paneles 27 a 29): ¡Cae en la trampa! "video_event" del NPC atrapado cómicamente, diálogos de sorpresa y el NPC explicando con ternura su travesura.
+- Fase 8 (Paneles 30 a 33+): Abrazo, perdón y celebración. "image_event" compartiendo con el NPC y "video_event" con todos los amigos bailando felices en el mapa.
 
-1. APERTURA ESTRELLA: Comienza con los personajes de los Jugadores Estrella (${starNames}). 1 "dialogue" y 1 "image_event" mostrando su rutina o juego inicial.
-2. ENCUENTRO CON AMIGOS: Los personajes estrella interactúan con los demás personajes en forma de "dialogue" (o "video_event" si juegan juntos).
-3. EL SUCESO INEXPLICABLE: Ocurre la travesura del NPC elegido en el mapa. Tipo "image_event". Muestra qué desapareció o cambió de lugar.
-4. AVISO DE EMERGENCIA: "dialogue" entre los personajes descubriendo el suceso ("¡Por lo tanto, debemos reunirnos!").
-5. REUNIÓN EN EL MAPA: "video_event" mostrando a todos los amigos corriendo a juntarse.
-6. INVESTIGACIÓN: 2 "dialogue" analizando el problema y haciendo hipótesis.
-7. LA PISTA DEL TRAVIESO: "image_event" donde encuentran la pista característica del NPC elegido (purpurina, plumas, cáscara de fruta, crema o marcas de ruedas).
-8. DEDUCCIÓN Y DESCARTE: 2 "dialogue" descartando sospechosos con lógica infantil basándose en la pista ("¡Pero Donald no come chispas de colores!").
-9. CASI LO ATRAPAN (NEAR MISS): "video_event" donde el NPC pasa velozmente detrás de ellos, PERO estaban distraídos mirando el suelo y no lo ven directamente.
-10. DESCUBRIMIENTO DEL RASTRO: 2 "dialogue" viendo la sombra o dirección donde escapó ("¡Por lo tanto, fue hacia allá!").
-11. EL PLAN Y LA TRAMPA: "image_event" donde montan una trampa tierna adaptada al NPC (un cofre brillante para Milo, una almohada suave para Teo, una red con frutas para Lulú, un pastel para Pipo, o una pista suave para Rayo).
-12. LA ESPERA SECRETA: 2 "dialogue" coordinándose escondidos en el lugar de la trampa.
-13. ¡CAE EN LA TRAMPA!: "video_event" donde el NPC cae atrapado cómicamente de forma inocente y revela su identidad.
-14. ACLARACIÓN Y PERDÓN: 2 "dialogue" (uno del NPC explicando con ternura por qué lo hizo y otro de los amigos perdonándolo con un abrazo).
-15. FIESTA FINAL UNIDA: "video_event" con todos los amigos y el nuevo amigo NPC bailando y celebrando juntos.
-
-TIPOS DE SLIDE:
-- "dialogue": Requiere character, player_name, player_color, text, locationId, target_words. (Si habla el NPC, pon su nombre en character y player_name: "Travieso").
-- "image_event": Requiere locationId, event_description (en inglés para el generador de imágenes) y text (en español).
-- "video_event": Requiere locationId, characters_involved (array con nombres), event_description (en inglés) y text (en español).
-
-Devuelve EXCLUSIVAMENTE este JSON válido sin bloques markdown ni texto exterior:
+FORMATO DEL JSON (Devuelve EXCLUSIVAMENTE este JSON válido con mínimo 30 paneles):
 {
-  "title": "Aventura y el Misterio en el Club",
-  "moral": "Compartiendo y escuchando a los demás hacemos nuevos amigos",
+  "title": "El Gran Misterio en el Club",
+  "moral": "Compartiendo y trabajando juntos resolvemos cualquier enigma",
   "npc_antagonist": "Nombre del NPC elegido",
   "initial_positions": [
     { "character": "${selectedCharacters[0]?.char?.name || 'Minnie'}", "locationId": "granja", "description": "en la granja soleada" }
@@ -193,16 +186,33 @@ Devuelve EXCLUSIVAMENTE este JSON válido sin bloques markdown ni texto exterior
       "character": "${selectedCharacters[0]?.char?.name || 'Minnie'}",
       "player_name": "${players[0]?.name || 'Jugador 1'}",
       "player_color": "${players[0]?.color || '#EC4899'}",
-      "text": "¡Qué hermoso día para explorar juntos!",
+      "text": "¡Qué linda mañana de sol para salir a pasear!",
       "locationId": "granja",
       "onomatopoeia": "¡WIII!",
-      "target_words": ["hermoso", "día", "juntos"]
+      "target_words": ["linda", "mañana", "pasear"]
+    },
+    {
+      "panel_number": 2,
+      "type": "image_event",
+      "locationId": "granja",
+      "event_description": "A sunny cartoon farm with colorful flowers blooming and butterflies flying, disney pixar 3d style",
+      "text": "Las flores del granero brillaban con el sol de la mañana.",
+      "onomatopoeia": "¡BRILLI-BRILLI!"
+    },
+    {
+      "panel_number": 3,
+      "type": "video_event",
+      "locationId": "granja",
+      "characters_involved": ["${selectedCharacters[0]?.char?.name || 'Minnie'}"],
+      "event_description": "Minnie running joyfully through the sunny farm path waving her hands, disney 3d animation",
+      "text": "¡Minnie salió corriendo alegremente para llamar a todos sus amigos!",
+      "onomatopoeia": "¡FLAP FLAP!"
     }
   ],
   "choices": [
-    { "id": "1", "type": "continue", "text": "Seguir jugando en el parque con el nuevo amigo" },
-    { "id": "2", "type": "continue", "text": "Ir a la playa a merendar todos juntos" },
-    { "id": "3", "type": "finish", "text": "Cantar la canción final de despedida" }
+    { "id": "1", "type": "continue", "text": "Hacer un picnic con nuestro nuevo amigo en el parque" },
+    { "id": "2", "type": "continue", "text": "Ir a la playa a construir castillos de arena" },
+    { "id": "3", "type": "finish", "text": "Celebrar con un baile de despedida" }
   ]
 }`;
 
@@ -215,27 +225,28 @@ Devuelve EXCLUSIVAMENTE este JSON válido sin bloques markdown ni texto exterior
 }
 
 /**
- * Continúa la historia manteniendo al NPC y la causalidad
+ * Continúa la historia manteniendo el mínimo de paneles y la alternancia de eventos
  */
 export async function continueStoryPrompt({ players, selectedCharacters, previousSummary, choiceText, apiKey }) {
     const cleanKey = apiKey?.trim();
     if (!cleanKey) throw new Error('Se requiere una Clave API de Gemini válida.');
 
     const prompt = `
-Continúa el siguiente capítulo de la historieta infantil interactiva (entre 10 y 14 viñetas).
+Continúa el siguiente capítulo de la historieta infantil interactiva (ENTRE 20 Y 25 PANELES).
 
-Momento anterior en la historia: ${previousSummary}
-Decisión tomada por los niños: "${choiceText}"
+Momento anterior: ${previousSummary}
+Decisión tomada: "${choiceText}"
 
 UBICACIONES OBLIGATORIAS:
 ${ZONES_PROMPT_LIST}
 
-REGLAS:
-1. Aplica la regla de "POR LO TANTO / PERO": la decisión genera una consecuencia directa pero un nuevo desafío divertido con los amigos y el NPC.
-2. Intercala "dialogue", "image_event" y "video_event".
-3. Concluye con 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
+REGLAS ESTRICTAS:
+1. Mínimo 20 paneles numerados en "panels".
+2. NUNCA coloques más de 2 diálogos seguidos. Intercala constantemente "image_event" y "video_event" para mostrar las acciones.
+3. Causa y efecto ("POR LO TANTO... / PERO...").
+4. Concluye con 3 choices: 2 de tipo "continue" y 1 de tipo "finish".
 
-Devuelve EXCLUSIVAMENTE este JSON válido con estructura "title", "moral", "panels" y "choices".
+Devuelve EXCLUSIVAMENTE este JSON válido.
 `;
 
     const data = await executeGeminiRequest(prompt, cleanKey);
@@ -247,7 +258,7 @@ Devuelve EXCLUSIVAMENTE este JSON válido con estructura "title", "moral", "pane
 }
 
 /**
- * Comunicación directa con la API de Gemini
+ * Comunicación directa con la API de Gemini (con maxOutputTokens ampliado a 8192)
  */
 async function executeGeminiRequest(prompt, apiKey) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
@@ -259,7 +270,8 @@ async function executeGeminiRequest(prompt, apiKey) {
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
                 responseMimeType: 'application/json',
-                temperature: 0.7
+                temperature: 0.7,
+                maxOutputTokens: 8192
             }
         })
     });

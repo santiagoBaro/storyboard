@@ -15,12 +15,35 @@ class DialogAudioManager {
         }
     }
 
+    getPrebuiltVoice(characterName) {
+        const name = (characterName || '').toLowerCase();
+        // Voces agudas y dulces
+        if (name.includes('minnie') || name.includes('daisy') || name.includes('gato')) {
+            return 'Aoede';
+        }
+        // Voces enérgicas / juguetonas
+        if (name.includes('mickey') || name.includes('pluto') || name.includes('auto') || name.includes('ardilla') || name.includes('parro')) {
+            return 'Puck';
+        }
+        // Voces graves / rasposas
+        if (name.includes('donald')) {
+            return 'Fenrir';
+        }
+        if (name.includes('clarabella')) {
+            return 'Kore';
+        }
+        return 'Puck';
+    }
+
     async speak(text, characterName, apiKey) {
         this.stop();
 
-        const charObj = CHARACTERS.find(c => c.name.toLowerCase() === (characterName || '').toLowerCase());
-        const voiceStyle = charObj?.voice_design || 'Cheerful, enthusiastic cartoon character voice in clear Spanish';
+        // Limpia prefijos como "Minnie: ¡Hola!" para que no lea "Minnie dos puntos"
+        const cleanText = (text || '').replace(/^[^:]+:\s*/, '').trim();
+        if (!cleanText) return;
+
         const cleanKey = apiKey?.trim();
+        const voiceName = this.getPrebuiltVoice(characterName);
 
         if (cleanKey) {
             try {
@@ -32,19 +55,18 @@ class DialogAudioManager {
                     body: JSON.stringify({
                         contents: [
                             {
-                                parts: [
-                                    {
-                                        text: text,
-                                        speech_metadata: {
-                                            speaker: characterName || 'Narrador',
-                                            style: voiceStyle
-                                        }
-                                    }
-                                ]
+                                parts: [{ text: cleanText }]
                             }
                         ],
                         generationConfig: {
-                            responseModalities: ['AUDIO']
+                            responseModalities: ['AUDIO'],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: voiceName
+                                    }
+                                }
+                            }
                         }
                     })
                 });
@@ -59,20 +81,18 @@ class DialogAudioManager {
                 const audioBase64 = candidatePart?.inlineData?.data;
 
                 if (audioBase64) {
-                    // Gemini 3.8 TTS devuelve WAV (audio/wav) con cabecera estándar RIFF
                     const mime = candidatePart?.inlineData?.mimeType || 'audio/wav';
                     const audio = new Audio(`data:${mime};base64,${audioBase64}`);
                     this.currentAudio = audio;
                     return audio.play();
                 }
             } catch (err) {
-                console.warn('Fallo gemini-3.8-flash-lite-tts, recurriendo a Web Speech API...', err);
+                console.warn('Fallback a SpeechSynthesis nativo:', err);
             }
         }
 
-        // Fallback nativo del navegador si no hay conexión o falla la cuota
         if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
+            const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'es-ES';
             window.speechSynthesis.speak(utterance);
         }

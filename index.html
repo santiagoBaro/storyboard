@@ -460,7 +460,7 @@
             if (step === 'story' && storyData && panels.length > 0) {
                 const activePanel = panels[activePanelIndex] || panels[0];
                 const isLastPanel = activePanelIndex === panels.length - 1;
-                const activeZone = MAP_ZONES[activePanel.locationId] || { name: 'El Club', sceneImage: MAP_IMAGE };
+                const activeZone = MAP_ZONES[activePanel.locationId] || MAP_ZONES['minnie_living'];
                 const activeChar = CHARACTERS.find(c => c.name.toLowerCase() === (activePanel.character || '').toLowerCase());
 
                 const isEvent = activePanel.type === 'event';

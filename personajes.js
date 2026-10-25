@@ -7,7 +7,7 @@ export const CHARACTERS = [
         subtitle: '¡Vestido de lunares!',
         emoji: '🎀',
         image: './personajes/minnie.png',
-        voice_design: 'A very high-pitched, playful, energetic and slightly nasal female cartoon mouse voice, talking with cheerful enthusiasm.'
+        voice_design: 'Iconic classic female cartoon mouse voice. Very high-pitched feminine falsetto, sweet, gentle and slightly nasal with a playful sing-song cadence. Cheerful, affectionate, melodic, and crisp animation studio quality.'
     },
     {
         id: 'mickey',
@@ -15,7 +15,7 @@ export const CHARACTERS = [
         subtitle: '¡Líder de la casa!',
         emoji: '🐭',
         image: './personajes/mickey.png',
-        voice_design: 'A cheerful, high-pitched male cartoon mouse voice, highly energetic, optimistic, and friendly.'
+        voice_design: 'Iconic classic male cartoon mouse voice. Bright, high-pitched male falsetto with a friendly, buoyant cadence and slight vocal breaks on enthusiastic words. Warm, optimistic, clear studio animation tone with joyful energy.'
     },
     {
         id: 'donald',
@@ -23,7 +23,7 @@ export const CHARACTERS = [
         subtitle: '¡Gorra marinera!',
         emoji: '🦆',
         image: './personajes/donald.png',
-        voice_design: 'A raspy, squawky, duck-like male cartoon voice, slightly temperamental but very energetic.'
+        voice_design: 'Iconic cartoon duck voice with distinctive buccal speech. Highly raspy, squawky, and compressed quacking timbre, fast-paced and semi-garbled yet intelligible, full of explosive, temperamental, and humorous energy.'
     },
     {
         id: 'daisy',
@@ -31,7 +31,7 @@ export const CHARACTERS = [
         subtitle: '¡Lazo morado coqueto!',
         emoji: '🌼',
         image: './personajes/daisy.png',
-        voice_design: 'A confident, sweet female cartoon duck voice with a touch of elegance and attitude.'
+        voice_design: 'Charming female cartoon duck voice. Mid-to-high pitch with a smooth nasal duck overtone, melodramatic and sassy cadence, clear articulate diction with theatrical flair, sweet yet delightfully demanding.'
     },
     {
         id: 'pluto',
@@ -39,7 +39,7 @@ export const CHARACTERS = [
         subtitle: '¡El fiel perrito!',
         emoji: '🐕',
         image: './personajes/pluto.png',
-        voice_design: 'A goofy, breathy, highly energetic cartoon dog voice, expressive and warm.'
+        voice_design: 'Playful and goofy cartoon dog vocalization. Breathless, throaty, and deeply expressive with friendly panting inflections, enthusiastic dog-like whines, warm guttural chuckles, and bouncy clumsy energy.'
     },
     {
         id: 'clarabella',
@@ -47,7 +47,7 @@ export const CHARACTERS = [
         subtitle: '¡Alegre y ocurrente!',
         emoji: '🐮',
         image: './personajes/clarabella.png',
-        voice_design: 'A loud, hearty, cheerful, slightly eccentric female cartoon cow voice with big laughs.'
+        voice_design: 'Brassy, boisterous female cartoon cow voice. Resonant, operatic alto with wide theatrical vibrato, hearty guffaws, warm country gossip cadence, loud, cheerful, and endearingly eccentric.'
     },
     {
         id: 'gato',
@@ -55,7 +55,7 @@ export const CHARACTERS = [
         subtitle: '¡Travieso y mimoso!',
         emoji: '🐱',
         image: './personajes/gato.png',
-        voice_design: 'A cute, mischievous, soft and high-pitched kitten voice.'
+        voice_design: 'Tiny, adorable cartoon kitten voice. Very high-pitched, soft, breathy, and delicate with subtle purring vocal fry and kitten meow-like lilts. Curious, mischievous, gentle, and endearing.'
     },
     {
         id: 'auto',
@@ -63,7 +63,7 @@ export const CHARACTERS = [
         subtitle: '¡Rumbo al paseo!',
         emoji: '🚗',
         image: './personajes/auto_rojo.png',
-        voice_design: 'A mechanical but friendly and enthusiastic cartoon vehicle voice with motor hums.'
+        voice_design: 'Animated cartoon anthropomorphic car voice. Chunky, mid-range metallic resonance with subtle engine-rumble vocal undertones and playful horn-like inflections. Friendly, bouncy, fast, and full of revving enthusiasm.'
     },
     {
         id: 'dale',
@@ -71,7 +71,7 @@ export const CHARACTERS = [
         subtitle: '¡Grandes bellotas!',
         emoji: '🐿️',
         image: './personajes/ardilla.png',
-        voice_design: 'A very fast, extremely high-pitched, squeaky chipmunk voice.'
+        voice_design: 'Hyperactive cartoon chipmunk voice. Extremely high-pitched with an artificial tape speedup effect, rapid-fire staccato delivery, squeaky, bright, and filled with giggles and mischievous, energetic chatter.'
     },
     {
         id: 'parro',
@@ -79,6 +79,6 @@ export const CHARACTERS = [
         subtitle: '¡Pajarito curioso!',
         emoji: '🦜',
         image: './personajes/parro.png',
-        voice_design: 'A lively, squawking tropical cartoon parrot voice that mimics words cheerfully.'
+        voice_design: 'Exuberant tropical cartoon parrot voice. High-mid nasal squawk, sharp beak-clacking vocal texture, rhythmic mimicking cadence, vibrant, perky, and theatrically dramatic with colorful sing-song bursts.'
     }
 ];

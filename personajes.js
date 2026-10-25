@@ -7,7 +7,7 @@ export const CHARACTERS = [
         subtitle: '¡Vestido de lunares!',
         emoji: '🎀',
         image: './personajes/minnie.png',
-        voice_design: 'Exact iconic Minnie Mouse cartoon voice (Russi Taylor style). Pristine, delicate feminine head-voice falsetto with a gentle, melodic upward lilt at sentence endings. Very sweet, breathy, smiling acoustic delivery with a light nasal resonance, playful musical cadence ("Yoo-hoo!"), warm affectionate chuckles, and crystal-clear golden-age animation articulation.'
+        voice_design: 'Voz icónica de Minnie Mouse en español rioplatense uruguayo. Falsete de cabeza femenino muy agudo, dulce, cantarín y ligeramente nasal. Cadencia uruguaya suave, afectuosa y sonriente, con entonación melódica al final de cada frase, risitas tiernas ("¡Ay, qué divino, chiquilines!") y articulación impecable de animación clásica.'
     },
     {
         id: 'mickey',
@@ -15,7 +15,7 @@ export const CHARACTERS = [
         subtitle: '¡Líder de la casa!',
         emoji: '🐭',
         image: './personajes/mickey.png',
-        voice_design: 'Exact iconic Mickey Mouse cartoon voice (Wayne Allwine / Bret Iwan style). Signature high-pitched male falsetto with a bright pharyngeal lift and characteristic subtle vocal crack/break on energetic syllables. Warm, bouncy, smiling acoustic resonance, friendly breathy throat chuckles ("Haha, gosh!"), buoyant cadence, and joyful golden-age studio presence.'
+        voice_design: 'Voz icónica de Mickey Mouse en español rioplatense uruguayo. Falsete masculino agudo y brillante con colocación faríngea y leves quiebres vocales al entusiasmarse. Tono alegre, cálido y compinche con cadencia uruguaya optimista, risita clásica entre dientes ("¡Jeje, qué lindo, che!") y energía de líder entusiasta.'
     },
     {
         id: 'donald',
@@ -23,7 +23,7 @@ export const CHARACTERS = [
         subtitle: '¡Gorra marinera!',
         emoji: '🦆',
         image: './personajes/donald.png',
-        voice_design: 'Exact iconic Donald Duck voice (Clarence Nash / Tony Anselmo technique). Highly distinctive buccal speech produced by lateral airflow friction inside the cheek pouches. Extremely raspy, compressed, wet duck-squawk timbre with sputtering explosive plosives, rapid temperamental cadence, and feisty quacking undulations while maintaining cartoon dialogue intelligibility.'
+        voice_design: 'Voz auténtica del Pato Donald con habla bucal lateral en las mejillas adaptada al español rioplatense. Timbre extremadamente rasposo, comprimido y graznado, con oclusivas explosivas húmedas y quejas aceleradas de cascarrabias ("¡Pero qué barbaridad, bo!"), manteniendo la inteligibilidad cómica y el humor berrinchudo.'
     },
     {
         id: 'daisy',
@@ -31,7 +31,7 @@ export const CHARACTERS = [
         subtitle: '¡Lazo morado coqueto!',
         emoji: '🌼',
         image: './personajes/daisy.png',
-        voice_design: 'Exact iconic Daisy Duck cartoon voice (Tress MacNeille style). Mid-to-high register with a distinctive forward nasal duck buzz and smooth soft-palate resonance. Theatrical, sassy, and melodramatic delivery with dramatic pitch glides, sharp feminine diction, coy breathy sighs, and charmingly demanding diva cadence.'
+        voice_design: 'Voz clásica de Daisy Duck en español uruguayo. Registro medio-agudo con resonancia nasal de pato refinada y vibrato teatral. Dicción clara, elegante y coqueta con cadencia diva rioplatense, remates melodramáticos seguros y un tono dulce pero con carácter ("¡Mirá lo que es esto, por favor!").'
     },
     {
         id: 'pluto',
@@ -39,7 +39,7 @@ export const CHARACTERS = [
         subtitle: '¡El fiel perrito!',
         emoji: '🐕',
         image: './personajes/pluto.png',
-        voice_design: 'Exact iconic Pluto vocalizations (Pinto Colvig / Bill Farmer style). Deeply expressive anthropomorphic hound sounds; guttural warm chuckles, breathy rhythmic panting, energetic canine yelps, throaty cartoon whines, goofy rising glissandos ("Yeah-yeah-yeah!"), and clumsy, lovable puppy enthusiasm.'
+        voice_design: 'Vocalización clásica de Pluto el perro. Sonidos antropomórficos expresivos sin palabras formales: jadeos cálidos y entrecortados, resoplidos guturales simpáticos, aullidos ascendentes juguetones ("¡Yujuu-guau!"), quejidos cariñosos y torpe entusiasmo de cachorro leal y compañero.'
     },
     {
         id: 'clarabella',
@@ -47,7 +47,7 @@ export const CHARACTERS = [
         subtitle: '¡Alegre y ocurrente!',
         emoji: '🐮',
         image: './personajes/clarabella.png',
-        voice_design: 'Exact iconic Clarabelle Cow voice (Elvia Allman style). Boisterous, brassy operatic contralto with a wide, dramatic bovine vibrato on sustained vowels. Loud, hearty country gossip cadence, booming chest-resonant belly laughs ("Ah-hyuck-hyuck!"), eccentric theatrical flair, and overflowing neighborly warmth.'
+        voice_design: 'Voz de Clarabella la vaca en español uruguayo campechano y sociable. Contralto amplio y operístico con vibrato abierto en las vocales. Tono ruidoso, alegre y de vecina compinche de pueblo, carcajadas sonoras de pecho ("¡Ah-ja-ja, mirá vos qué disparate!") y calidez espontánea.'
     },
     {
         id: 'gato',
@@ -55,7 +55,7 @@ export const CHARACTERS = [
         subtitle: '¡Travieso y mimoso!',
         emoji: '🐱',
         image: './personajes/gato.png',
-        voice_design: 'Exact classic Figaro cartoon kitten voice (Mel Blanc animation style). Microscopic, ultra-high-pitched, delicate feline voice. Whispery breath-rich mews, soft glottal vocal fry reminiscent of tiny purring, inquisitive rising inflections, and mischievous, adorable baby-cat playfulness.'
+        voice_design: 'Voz diminuta de Figaro el gatito en español uruguayo. Registro ultraagudo, susurrado, suave y delicado, con maullidos sutiles intercalados, ligero ronroneo en el aire vocal y entonación inocente, curiosa y mimosa de gatito travieso.'
     },
     {
         id: 'auto',
@@ -63,7 +63,7 @@ export const CHARACTERS = [
         subtitle: '¡Rumbo al paseo!',
         emoji: '🚗',
         image: './personajes/auto_rojo.png',
-        voice_design: 'Classic animated anthropomorphic cartoon car voice (Toontown / Benny the Cab style). Cheerful mid-tenor voice infused with mechanical throat rumbles and idle engine vibrations on pauses ("vroom-vroom"). Energetic brassy horn-like vocal spikes ("Beep-beep!"), bouncy suspension pacing, and revving, road-trip enthusiasm.'
+        voice_design: 'Voz animada de auto parlante en español uruguayo. Tenor medio metálico con ronquido gutural constante de motor regulando ("brrr-brrr") y picos agudos que imitan una bocina simpática ("¡Pip-pip!"). Ritmo ágil, enérgico, con onda de paseo rutero y entusiasmo fierrero.'
     },
     {
         id: 'dale',
@@ -71,14 +71,14 @@ export const CHARACTERS = [
         subtitle: '¡Grandes bellotas!',
         emoji: '🐿️',
         image: './personajes/ardilla.png',
-        voice_design: 'Exact classic Chip and Dale chipmunk voice (Jimmy MacDonald accelerated tape style). Ultra-high-pitched, helium-frequency register with lightning-fast staccato delivery. Squeaky, bright, filled with rapid micro-giggles, acoustic cheek clicks, and hyperactive, mischievous forest chatter.'
+        voice_design: 'Voz de ardilla clásica acelerada en cinta en español uruguayo. Registro ultraagudo (efecto helio), dicción staccato rapidísima y chispeante, llena de risitas nerviosas, chasquidos de mejilla y parloteo travieso e hiperactivo de comiquita infantil.'
     },
     {
         id: 'parro',
-        name: 'Loro (Parro)',
-        subtitle: '¡Pajarito curioso!',
-        emoji: '🦜',
+        name: 'Perro',
+        subtitle: '¡Fiel y juguetón!',
+        emoji: '🐶',
         image: './personajes/parro.png',
-        voice_design: 'Exuberant tropical cartoon parrot voice (José Carioca meets Iago style). Piercing upper-mid nasal squawk with sharp beak-clack articulation. Vibrant Latin-tropical cadence, rhythmic sing-song bursts, perky repetitive mimicry, and flamboyant, theatrical showman energy.'
+        voice_design: 'Voz animada de perrito simpático y revoltoso en español rioplatense uruguayo. Registro medio-agudo, cálido y movedizo, con pequeños ladridos y jadeos alegres intercalados entre palabras ("¡Guau, qué lindo día para jugar, che!"). Tono fiel, compinche, travieso y lleno de entusiasmo callejero uruguayo.'
     }
 ];

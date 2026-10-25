@@ -53,22 +53,12 @@
             overflow: hidden;
             border-radius: 1.5rem;
             position: relative;
-            background-color: #e2e8f0;
+            background-color: #93c5fd;
             border: 5px solid white;
             box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .map-fallback-text {
-            position: absolute;
-            color: #94a3b8;
-            font-weight: 800;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            z-index: 0;
         }
 
         .map-stage-image {
@@ -85,34 +75,36 @@
             z-index: 1;
         }
 
-        /* Animación Cinemática para el Video final */
         @keyframes kenburns {
             0% {
                 transform: scale(1);
             }
 
+            50% {
+                transform: scale(1.12) translate(-1%, -1%);
+            }
+
             100% {
-                transform: scale(1.15);
+                transform: scale(1);
             }
         }
 
-        .video-container {
+        .video-player-container {
             width: 100%;
-            height: 250px;
+            height: 280px;
             overflow: hidden;
-            border-radius: 1rem;
+            border-radius: 1.25rem;
             position: relative;
-            background-color: #000;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-            border: 4px solid #1e293b;
+            background-color: #020617;
+            border: 4px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        .video-image {
+        .video-scene-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            animation: kenburns 12s ease-in-out forwards;
-            opacity: 0.85;
+            animation: kenburns 14s infinite alternate ease-in-out;
         }
 
         @keyframes pulse-ring {
@@ -144,12 +136,15 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // IMPORTANTE: Hemos codificado el nombre del archivo reemplazando espacios por %20
-        const MAP_SOURCES = [
+        const DEFAULT_MAP_FILENAMES = [
+            'WhatsApp Image 2026-10-24 at 17.27.00_3.jpeg',
+            'WhatsApp%20Image%202026-10-24%20at%2017.27.00_3.jpeg',
+            'WhatsApp Image 2026-10-24 at 17.27.00_2.jpeg',
+            'WhatsApp%20Image%202026-10-24%20at%2017.27.00_2.jpeg',
+            'WhatsApp Image 2026-10-24 at 17.27.00.jpeg',
             'WhatsApp%20Image%202026-10-24%20at%2017.27.00.jpeg',
             'mapa.jpg',
-            'mapa.png',
-            'https://placehold.co/950x600/e2e8f0/94a3b8?text=Tapete+de+Juego'
+            'mapa.png'
         ];
 
         const CHARACTERS = [
@@ -194,17 +189,18 @@
 
             const [wizardStep, setWizardStep] = useState(!initialKey ? 0 : 1);
             const [step, setStep] = useState('setup');
-            const [videoImageUrl, setVideoImageUrl] = useState('');
+            const [videoSceneUrl, setVideoSceneUrl] = useState('');
 
-            const [mapSourceIndex, setMapSourceIndex] = useState(0);
-            const currentMapSrc = MAP_SOURCES[mapSourceIndex];
+            // MAPA: Comprueba si el usuario subió una imagen personalizada guardada
+            const customMapData = localStorage.getItem('custom_map_image_b64') || '';
+            const [mapIndex, setMapIndex] = useState(0);
+            const [currentMapSrc, setCurrentMapSrc] = useState(customMapData || DEFAULT_MAP_FILENAMES[0]);
 
             const savedPlayers = JSON.parse(localStorage.getItem('gemini_story_players') || '[]');
             const [players, setPlayers] = useState(savedPlayers);
 
             const [activePlayerId, setActivePlayerId] = useState(null);
             const [selectedCharacters, setSelectedCharacters] = useState([]);
-
             const [difficulty, setDifficulty] = useState('facil');
 
             const [storyData, setStoryData] = useState(null);
@@ -222,9 +218,24 @@
             };
 
             const handleImageError = () => {
-                if (mapSourceIndex < MAP_SOURCES.length - 1) {
-                    setMapSourceIndex(prev => prev + 1);
+                if (!customMapData && mapIndex < DEFAULT_MAP_FILENAMES.length - 1) {
+                    const nextIndex = mapIndex + 1;
+                    setMapIndex(nextIndex);
+                    setCurrentMapSrc(DEFAULT_MAP_FILENAMES[nextIndex]);
                 }
+            };
+
+            const handleCustomMapUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const b64 = event.target.result;
+                    localStorage.setItem('custom_map_image_b64', b64);
+                    setCurrentMapSrc(b64);
+                    alert("¡Mapa cargado con éxito en tu dispositivo!");
+                };
+                reader.readAsDataURL(file);
             };
 
             // RECONOCIMIENTO DE VOZ
@@ -278,7 +289,6 @@
                     let speakingRate = 1.0;
 
                     const charLower = (characterName || '').toLowerCase();
-
                     if (charLower.includes('minnie') || charLower.includes('daisy')) {
                         voiceName = "es-ES-Neural2-A";
                         pitch = 6.0;
@@ -294,29 +304,24 @@
                         pitch = 1.0;
                     }
 
-                    const requestBody = {
-                        input: { text: text },
-                        voice: { languageCode: "es-ES", name: voiceName },
-                        audioConfig: { audioEncoding: "MP3", pitch: pitch, speakingRate: speakingRate }
-                    };
-
                     const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
+                        body: JSON.stringify({
+                            input: { text },
+                            voice: { languageCode: "es-ES", name: voiceName },
+                            audioConfig: { audioEncoding: "MP3", pitch, speakingRate }
+                        })
                     });
 
-                    if (!response.ok) throw new Error(`Google TTS Error`);
+                    if (!response.ok) throw new Error("TTS status " + response.status);
 
                     const data = await response.json();
                     const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
-
                     if (window.currentAudio) window.currentAudio.pause();
                     window.currentAudio = audio;
                     audio.play();
-
                 } catch (error) {
-                    console.warn("Fallo Google TTS. Usando voz de respaldo...");
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = 'es-ES';
                     window.speechSynthesis.speak(utterance);
@@ -331,36 +336,33 @@
                         window.speechSynthesis.cancel();
 
                         const textToRead = currentLine.type === 'action'
-                            ? `¡Atención ${currentLine.player_name}! Es hora de mover a ${currentLine.character}. ${currentLine.text}`
+                            ? `¡Atención ${currentLine.player_name}! Mueve a ${currentLine.character}. ${currentLine.text}`
                             : currentLine.text;
 
                         playGoogleTTS(textToRead, currentLine.character);
                     }
                 }
-
                 return () => {
                     if (window.currentAudio) window.currentAudio.pause();
                     window.speechSynthesis.cancel();
-                }
+                };
             }, [step, currentStoryIndex, difficulty, storyData]);
 
-
-            // GENERAR VIDEO AL FINALIZAR
-            const generateEndingVideo = () => {
+            // GENERACIÓN DE VIDEO FINAL CON LOADER
+            const triggerEndingVideo = () => {
                 setStep('generating_video');
-                // Traducción automática del prompt para Pollinations AI (que prefiere inglés)
-                const videoPrompt = encodeURIComponent(`Disney Pixar style 3d cartoon, ${storyData.title}, ${storyData.moral}, colorful, happy cute kids and animals, storybook ending, bright magical lighting --width 800 --height 600`);
-                const url = `https://image.pollinations.ai/prompt/${videoPrompt}?nologo=true`;
+
+                const promptQuery = encodeURIComponent(`Disney Pixar style 3D cartoon, Mickey Mouse Clubhouse celebration, happy children playing, magical glowing lights, storybook finish --width 800 --height 500`);
+                const sceneUrl = `https://image.pollinations.ai/prompt/${promptQuery}?nologo=true`;
 
                 const img = new Image();
-                img.src = url;
+                img.src = sceneUrl;
                 img.onload = () => {
-                    setVideoImageUrl(url);
+                    setVideoSceneUrl(sceneUrl);
                     setStep('video_playing');
-                    playGoogleTTS(`¡Fin del cuento! Recuerden siempre que: ${storyData.moral}`, "Minnie");
+                    playGoogleTTS(`¡Fin de la aventura! Recuerden siempre: ${storyData.moral}`, "Minnie");
                 };
                 img.onerror = () => {
-                    // Si el generador falla, pasamos directo al fin estático
                     setStep('finished');
                 };
             };
@@ -397,8 +399,7 @@
                 if (currentStoryIndex < storyData.story.length - 1) {
                     setCurrentStoryIndex(prev => prev + 1);
                 } else {
-                    // En lugar de ir a "finished", generamos el video final
-                    generateEndingVideo();
+                    triggerEndingVideo();
                 }
             };
 
@@ -452,18 +453,18 @@
                 }).join('\n');
 
                 const prompt = `
-Crea un cuento interactivo corto para niños de 4 a 6 años enfocado en valores como la amabilidad, compartir, trabajar en equipo, superar obstaculos, hablar de sus emosiones.
-Que el final sea abierto, qu el nino lo pueda seguir con su imaginasion.
+Crea un cuento interactivo corto para niños de 4 a 6 años enfocado en valores como la amabilidad, compartir, trabajar en equipo, superar obstaculos, hablar de sus emociones.
+Que el final sea abierto para que el niño lo siga con su imaginacion.
 
 Jugadores y sus personajes:
 ${playersPrompt}
 
-IMPORTANTE - UBICACIONES DEL MAPA (Usa SOLO estos IDs):
+UBICACIONES OBLIGATORIAS (Usa SOLO estos IDs):
 ${ZONES_PROMPT_LIST}
 
-REGLAS OBLIGATORIAS:
+REGLAS:
 1. Los Jugadores Estrella deben tener más intervenciones de lectura.
-2. Intercala pasos de tipo "action" donde los muñecos deban desplazarse con sonidos divertidos (ej. 'tilín tilín', '¡boing!', sonido de auto '¡rum rum!').
+2. Intercala pasos de tipo "action" donde los muñecos deban desplazarse con sonidos divertidos.
 
 Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 {
@@ -507,14 +508,14 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                     setStep('positioning');
                 } catch (error) {
                     console.error("Error al generar historia:", error);
-                    setErrorMessage("Revisa la Clave API o tu conexión a Internet.");
+                    setErrorMessage("Por favor verifica tu Clave API de Gemini o tu conexión a Internet.");
                     setStep('error');
                 }
             };
 
 
             /* ==============================================================
-             * VISTAS SECUNDARIAS
+             * VISTAS SECUNDARIAS Y PANTALLAS DE JUEGO
              * ============================================================== */
             if (step === 'loading') {
                 return (
@@ -543,7 +544,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // Vista intermedia mientras se crea el video
+            // PANTALLA 1: LOADER DEL VIDEO FINAL
             if (step === 'generating_video') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
@@ -554,33 +555,36 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // Vista del Reproductor de "Video" (Imagen generada + Ken Burns + TTS final)
+            // PANTALLA 2: REPRODUCTOR DE VIDEO FINAL
             if (step === 'video_playing') {
                 return (
                     <div className="min-h-screen flex flex-col p-4 sm:p-6 max-w-xl mx-auto justify-center">
-                        <div className="disney-card p-6 sm:p-8 w-full flex flex-col items-center border border-pink-100 shadow-xl bg-[#0f172a]">
-                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-6 text-center tracking-wide">
-                                ¡Fin de la Aventura!
+                        <div className="disney-card p-6 sm:p-8 w-full flex flex-col items-center border border-pink-100 shadow-xl bg-slate-900 text-white">
+                            <h1 className="text-2xl sm:text-3xl font-black text-white mb-5 text-center tracking-wide">
+                                🎬 ¡Fin de la Aventura!
                             </h1>
 
-                            <div className="video-container">
-                                <img src={videoImageUrl} alt="Escena Final" className="video-image" />
+                            <div className="video-player-container">
+                                <img src={videoSceneUrl} alt="Escena del Video Final" className="video-scene-image" />
+                                <div className="absolute top-3 left-3 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow">
+                                    En Vivo
+                                </div>
                             </div>
 
                             <div className="bg-white/10 rounded-2xl p-5 mt-6 w-full text-center border border-white/20">
-                                <p className="text-xs font-black text-pink-300 uppercase tracking-widest mb-2">Moraleja Mágica</p>
+                                <p className="text-xs font-black text-pink-300 uppercase tracking-widest mb-2">Enseñanza Mágica</p>
                                 <p className="text-lg text-white font-bold italic">"{storyData?.moral}"</p>
                             </div>
 
                             <button onClick={() => { setStep('setup'); setWizardStep(1); }} className="w-full mt-6 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold py-4 rounded-2xl text-lg shadow-md transition active:scale-95">
-                                Jugar de Nuevo
+                                Jugar de Nuevo 🔄
                             </button>
                         </div>
                     </div>
                 );
             }
 
-            // Vista de Posicionamiento (Con fallback visual para el mapa)
+            // PANTALLA DE POSICIONAMIENTO EN EL MAPA
             if (step === 'positioning' && storyData) {
                 const pos = storyData.initial_positions[currentPositionIndex];
                 const charObj = CHARACTERS.find(c => c.name.toLowerCase() === pos.character.toLowerCase()) || { name: pos.character, image: '', emoji: '🧸' };
@@ -604,11 +608,14 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 En: <span className="text-indigo-600 font-extrabold">{zone.name}</span> <span className="text-xs font-normal text-slate-400">({zone.detail})</span>
                             </p>
 
-                            {/* MAPA CON FONDO DE RESPALDO */}
                             <div className="map-viewport mb-6">
-                                <div className="map-fallback-text">Mapa Interactivo</div>
-                                <img src={currentMapSrc} alt="Fondo" onError={handleImageError} className="map-stage-image"
-                                    style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }} />
+                                <img
+                                    src={currentMapSrc}
+                                    alt="Mapa de Juego"
+                                    onError={handleImageError}
+                                    className="map-stage-image"
+                                    style={{ transform: `scale(${zone.scale}) translate(-${zone.x}, -${zone.y})` }}
+                                />
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-rose-500 border-4 border-white shadow-xl flex items-center justify-center z-10">
                                     <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
                                 </div>
@@ -631,6 +638,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
+            // PANTALLA DE LECTURA / NARRACIÓN DEL CUENTO
             if (step === 'story' && storyData) {
                 const current = storyData.story[currentStoryIndex];
                 const isAction = current.type === 'action';
@@ -660,9 +668,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                     Turno: {current.player_name}
                                 </span>
 
-                                {/* MAPA PEQUEÑO CON FONDO DE RESPALDO */}
                                 <div className="w-16 h-16 rounded-2xl border-2 border-white shadow-md overflow-hidden bg-slate-200 relative flex items-center justify-center">
-                                    <span className="absolute text-[10px] font-black text-slate-400">MAPA</span>
                                     <img src={currentMapSrc} alt="Zona" onError={handleImageError} className="z-10"
                                         style={{ position: 'absolute', left: '50%', top: '50%', width: '320px', maxWidth: 'none', transformOrigin: '0 0', transform: `scale(${zone.scale * 0.7}) translate(-${zone.x}, -${zone.y})` }} />
                                 </div>
@@ -694,7 +700,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                 )}
                                 <p className="text-xs sm:text-sm font-extrabold text-slate-700 bg-white/90 px-5 py-1.5 rounded-full shadow-sm">
                                     {difficulty === 'narrada'
-                                        ? "Escuchando el cuento..."
+                                        ? "Escuchando el cuento narrado..."
                                         : (isAction ? "¡Haz el sonido y mueve el muñeco!" : "Lee en voz alta para avanzar")}
                                 </p>
                                 {transcript && difficulty !== 'narrada' && (
@@ -708,7 +714,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                 );
             }
 
-            // Vista antigua de Fin (ya no se usa por defecto, pero queda como respaldo)
             if (step === 'finished') {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
@@ -729,11 +734,10 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
 
 
             /* ==============================================================
-             * RENDER PRINCIPAL (WIZARD DE CONFIGURACIÓN)
+             * ASISTENTE DE CONFIGURACIÓN (WIZARD)
              * ============================================================== */
             return (
                 <div className="min-h-screen p-4 sm:p-6 max-w-4xl mx-auto flex flex-col">
-                    {/* HEADER */}
                     <header className="text-center mb-6 pt-2">
                         <div className="inline-flex items-center gap-1.5 bg-pink-100/80 px-4 py-1.5 rounded-full text-xs font-black text-pink-700 tracking-wider mb-2">
                             <span>✨</span>
@@ -743,16 +747,20 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                             ¡Armemos la Historia!
                         </h1>
-                        {!isUrlKey && wizardStep > 0 && (
-                            <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline mt-2 hover:text-slate-600">
-                                Modificar Clave Mágica
-                            </button>
-                        )}
+                        <div className="flex items-center justify-center gap-4 mt-2">
+                            {!isUrlKey && wizardStep > 0 && (
+                                <button onClick={() => setWizardStep(0)} className="text-xs font-bold text-slate-400 underline hover:text-slate-600">
+                                    Modificar Clave Mágica
+                                </button>
+                            )}
+                            <label className="text-xs font-bold text-pink-600 underline cursor-pointer hover:text-pink-800">
+                                🗺️ Seleccionar Imagen del Mapa
+                                <input type="file" accept="image/*" onChange={handleCustomMapUpload} className="hidden" />
+                            </label>
+                        </div>
                     </header>
 
-                    {/* WIZARD CONTAINER */}
                     <main className="disney-card p-5 sm:p-8 border border-pink-100/70 flex-1">
-
                         <div className="flex justify-between items-center mb-8 px-2 max-w-md mx-auto">
                             {[1, 2, 3].map(st => (
                                 <div key={st} className="flex items-center">
@@ -771,10 +779,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                             <div className="max-w-md mx-auto animate-fadeIn">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-2">Paso 0: Clave Mágica</h3>
                                 <p className="text-sm font-medium text-slate-500 text-center mb-2">Ingresa tu llave de Gemini para jugar.</p>
-
-                                <div className="bg-amber-50 text-amber-800 text-[11px] p-3 rounded-xl mb-4 font-bold border border-amber-200">
-                                    🎙️ Nota: Para que funcione la Dificultad Narrada, asegúrate de habilitar la "Cloud Text-to-Speech API" en la consola de Google Cloud de tu llave.
-                                </div>
 
                                 <input
                                     type="password"
@@ -840,7 +844,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                             </div>
                         )}
 
-                        {/* PASO 2: PERSONAJES */}
+                        {/* PASO 2: ASIGNACIÓN DE PERSONAJES */}
                         {wizardStep === 2 && (
                             <div className="animate-fadeIn">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 2: Asignar Personajes</h3>
@@ -907,7 +911,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                             </div>
                         )}
 
-                        {/* PASO 3: DIFICULTAD Y GENERAR */}
+                        {/* PASO 3: DIFICULTAD Y LANZAMIENTO */}
                         {wizardStep === 3 && (
                             <div className="animate-fadeIn max-w-2xl mx-auto">
                                 <h3 className="text-xl font-black text-slate-800 text-center mb-1">Paso 3: Nivel de Lectura</h3>
@@ -928,9 +932,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                                                 className={`p-4 rounded-2xl border-2 cursor-pointer transition select-none flex flex-col justify-between ${isSelected ? 'border-pink-500 bg-pink-50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}`}
                                             >
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-lg">{lvl.icon}</span>
-                                                    </div>
+                                                    <span className="text-lg">{lvl.icon}</span>
                                                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-pink-500' : 'border-slate-300'}`}>
                                                         {isSelected && <div className="w-2 h-2 rounded-full bg-pink-500"></div>}
                                                     </div>
@@ -960,7 +962,6 @@ Devuelve EXCLUSIVAMENTE un JSON válido sin bloques markdown:
                         )}
                     </main>
 
-                    {/* PIE DE PÁGINA */}
                     <footer className="text-center py-4 mt-2">
                         <p className="text-[11px] font-bold text-slate-400">
                             🌸 Inspirado en la magia de Minnie Mouse & Disney Junior
